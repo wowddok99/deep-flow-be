@@ -1,6 +1,7 @@
 package com.deepflow.core.domain.session;
 
 import com.deepflow.core.domain.common.BaseTimeEntity;
+import com.deepflow.core.domain.log.FocusLog;
 import jakarta.persistence.*;
 import lombok.*;
 

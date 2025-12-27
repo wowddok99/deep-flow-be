@@ -1,4 +1,4 @@
-package com.deepflow.core.domain.session;
+package com.deepflow.core.domain.log;
 
 import com.deepflow.core.domain.common.BaseTimeEntity;
 import jakarta.persistence.*;
