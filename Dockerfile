@@ -10,7 +10,9 @@ RUN chmod +x gradlew
 RUN ./gradlew :deep-flow-api:bootJar -x test --no-daemon
 
 FROM eclipse-temurin:21-jre-alpine
+RUN apk add --no-cache tzdata
+ENV TZ=Asia/Seoul
 WORKDIR /app
 COPY --from=builder /app/deep-flow-api/build/libs/*.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Duser.timezone=Asia/Seoul", "-jar", "app.jar"]
