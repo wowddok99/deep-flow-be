@@ -4,16 +4,12 @@ import com.deepflow.core.domain.log.FocusLog;
 import com.deepflow.core.domain.log.FocusLogImage;
 import com.deepflow.core.domain.log.FocusLogTag;
 import com.deepflow.core.domain.tag.Tag;
-import com.deepflow.core.repository.log.FocusLogTagRepository;
 import com.deepflow.core.repository.tag.TagRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,12 +21,13 @@ public class FocusLogService {
     @Transactional
     public void updateLogDetails(
         FocusLog focusLog,
+        String title,
         String content,
         String summary,
         List<String> tagNames,
         List<String> imageUrls
     ) {
-        focusLog.update(content, summary);
+        focusLog.update(title, content, summary);
 
         updateTags(focusLog, tagNames);
         updateImages(focusLog, imageUrls);

@@ -13,6 +13,7 @@ public record SessionSummaryResponse(
     LocalDateTime endTime,
     Long durationSeconds,
     SessionStatus status,
+    String title,
     String summary
 ) {
     public static SessionSummaryResponse from(FocusSession session) {
@@ -22,6 +23,7 @@ public record SessionSummaryResponse(
             .endTime(session.getEndTime())
             .durationSeconds(session.getDurationSeconds())
             .status(session.getStatus())
+            .title(session.getFocusLog().getTitle())
             .summary(session.getFocusLog().getSummary())
             .build();
     }

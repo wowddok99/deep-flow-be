@@ -58,6 +58,7 @@ public class SessionService {
 
         focusLogService.updateLogDetails(
                 session.getFocusLog(),
+                request.title(),
                 contentJson,
                 request.summary(),
                 request.tags(),

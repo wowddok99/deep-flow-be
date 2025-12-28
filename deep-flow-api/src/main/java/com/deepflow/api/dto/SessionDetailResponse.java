@@ -15,6 +15,7 @@ public record SessionDetailResponse(
     Long durationSeconds,
     SessionStatus status,
     String content,
+    String title,
     String summary,
     List<String> tags,
     List<String> imageUrls
@@ -27,6 +28,7 @@ public record SessionDetailResponse(
             .durationSeconds(session.getDurationSeconds())
             .status(session.getStatus())
             .content(session.getFocusLog().getContent())
+            .title(session.getFocusLog().getTitle())
             .summary(session.getFocusLog().getSummary())
             .tags(session.getFocusLog().getLogTags().stream()
                 .map(logTag -> logTag.getTag().getName())

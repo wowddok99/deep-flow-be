@@ -21,6 +21,8 @@ public class FocusLog extends BaseTimeEntity {
     @Column(columnDefinition = "LONGTEXT")
     private String content;
 
+    private String title;
+    
     private String summary;
 
     @Builder.Default
@@ -31,7 +33,8 @@ public class FocusLog extends BaseTimeEntity {
     @OneToMany(mappedBy = "focusLog", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FocusLogImage> images = new ArrayList<>();
 
-    public void update(String content, String summary) {
+    public void update(String title, String content, String summary) {
+        this.title = title;
         this.content = content;
         this.summary = summary;
     }
