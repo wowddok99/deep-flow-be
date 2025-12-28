@@ -46,4 +46,10 @@ public class SessionController {
     public void stopSession(@PathVariable Long id) {
         sessionService.stopSession(id);
     }
+
+    @Operation(summary = "Delete Session")
+    @DeleteMapping("/{id}")
+    public void deleteSession(@PathVariable Long id) {
+        sessionService.deleteSession(id);
+    }
 }

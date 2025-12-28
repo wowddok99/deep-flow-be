@@ -18,6 +18,7 @@ import com.deepflow.api.service.log.FocusLogService;
 @Transactional(readOnly = true)
 public class SessionService {
 
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
     private final FocusSessionRepository sessionRepository;
     private final FocusLogService focusLogService;
 
@@ -48,9 +49,16 @@ public class SessionService {
         FocusSession session = sessionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + id));
 
+        String contentJson = null;
+        try {
+            contentJson = objectMapper.writeValueAsString(request.content());
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize content", e);
+        }
+
         focusLogService.updateLogDetails(
                 session.getFocusLog(),
-                request.content(),
+                contentJson,
                 request.summary(),
                 request.tags(),
                 request.imageUrls());
@@ -62,5 +70,13 @@ public class SessionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + id));
 
         session.stop(LocalDateTime.now());
+    }
+
+    @Transactional
+    public void deleteSession(Long id) {
+        if (!sessionRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Session not found with id: " + id);
+        }
+        sessionRepository.deleteById(id);
     }
 }
