@@ -94,7 +94,7 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n  \"content\": \"백엔드 API 성능 개선을 위한 리팩토링 진행.\",\n  \"summary\": \"SessionController 구현 완료.\",\n  \"tags\": \"#refactor #backend #java\"\n}"
+                    "raw": "{\n  \"content\": \"백엔드 API 성능 개선을 위한 리팩토링 진행.\",\n  \"summary\": \"SessionController 구현 완료.\",\n  \"tags\": [\n    \"#refactor\",\n    \"#backend\",\n    \"#java\"\n  ],\n  \"imageUrls\": [\n    \"https://example.com/image1.png\",\n    \"https://example.com/image2.png\"\n  ]\n}"
                 },
                 "url": {
                     "raw": "http://localhost:8080/api/v1/sessions/:id/log",

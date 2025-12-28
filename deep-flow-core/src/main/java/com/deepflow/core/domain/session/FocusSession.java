@@ -41,7 +41,6 @@ public class FocusSession extends BaseTimeEntity {
                 .focusLog(FocusLog.builder()
                         .content("")
                         .summary("")
-                        .tags("")
                         .build())
                 .build();
     }

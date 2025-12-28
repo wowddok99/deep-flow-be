@@ -11,12 +11,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.deepflow.api.service.log.FocusLogService;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class SessionService {
 
     private final FocusSessionRepository sessionRepository;
+    private final FocusLogService focusLogService;
 
     @Transactional
     public SessionResponse startSession() {
@@ -45,7 +48,12 @@ public class SessionService {
         FocusSession session = sessionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + id));
 
-        session.getFocusLog().update(request.content(), request.summary(), request.tags());
+        focusLogService.updateLogDetails(
+                session.getFocusLog(),
+                request.content(),
+                request.summary(),
+                request.tags(),
+                request.imageUrls());
     }
 
     @Transactional

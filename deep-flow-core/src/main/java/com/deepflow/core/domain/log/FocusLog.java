@@ -3,6 +3,8 @@ package com.deepflow.core.domain.log;
 import com.deepflow.core.domain.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Entity
@@ -21,11 +23,16 @@ public class FocusLog extends BaseTimeEntity {
 
     private String summary;
 
-    private String tags;
+    @Builder.Default
+    @OneToMany(mappedBy = "focusLog", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FocusLogTag> logTags = new ArrayList<>();
 
-    public void update(String content, String summary, String tags) {
+    @Builder.Default
+    @OneToMany(mappedBy = "focusLog", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FocusLogImage> images = new ArrayList<>();
+
+    public void update(String content, String summary) {
         this.content = content;
         this.summary = summary;
-        this.tags = tags;
     }
 }

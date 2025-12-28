@@ -8,7 +8,8 @@ import lombok.Builder;
 public record ErrorResponse(
         int status,
         String message,
-        LocalDateTime timestamp) {
+        LocalDateTime timestamp
+) {
     public static ErrorResponse of(int status, String message) {
         return ErrorResponse.builder()
                 .status(status)
