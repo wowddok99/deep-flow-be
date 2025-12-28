@@ -6,8 +6,8 @@ import java.util.List;
 
 @Builder
 public record LogUpdateRequest(
-        String content,
-        String summary,
-        List<String> tags,
-        List<String> imageUrls) {
-}
+    String content,
+    String summary,
+    List<String> tags,
+    List<String> imageUrls
+) {}

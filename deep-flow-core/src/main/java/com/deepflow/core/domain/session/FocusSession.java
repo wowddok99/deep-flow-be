@@ -35,14 +35,14 @@ public class FocusSession extends BaseTimeEntity {
 
     public static FocusSession create(LocalDateTime startTime) {
         return FocusSession.builder()
-                .startTime(startTime)
-                .status(SessionStatus.ONGOING)
-                .durationSeconds(0L)
-                .focusLog(FocusLog.builder()
-                        .content("")
-                        .summary("")
-                        .build())
-                .build();
+            .startTime(startTime)
+            .status(SessionStatus.ONGOING)
+            .durationSeconds(0L)
+            .focusLog(FocusLog.builder()
+                .content("")
+                .summary("")
+                .build())
+            .build();
     }
 
     public void stop(LocalDateTime endTime) {

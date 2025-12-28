@@ -23,8 +23,13 @@ public class FocusLogService {
     private final TagRepository tagRepository;
 
     @Transactional
-    public void updateLogDetails(FocusLog focusLog, String content, String summary, List<String> tagNames,
-            List<String> imageUrls) {
+    public void updateLogDetails(
+        FocusLog focusLog,
+        String content,
+        String summary,
+        List<String> tagNames,
+        List<String> imageUrls
+    ) {
         focusLog.update(content, summary);
 
         updateTags(focusLog, tagNames);
@@ -37,12 +42,16 @@ public class FocusLogService {
         if (tagNames != null) {
             for (String tagName : tagNames) {
                 Tag tag = tagRepository.findByName(tagName)
-                        .orElseGet(() -> tagRepository.save(Tag.builder().name(tagName).build()));
+                .orElseGet(() -> tagRepository.save(
+                    Tag.builder()
+                        .name(tagName)
+                        .build()
+                ));
 
                 FocusLogTag logTag = FocusLogTag.builder()
-                        .focusLog(focusLog)
-                        .tag(tag)
-                        .build();
+                    .focusLog(focusLog)
+                    .tag(tag)
+                    .build();
 
                 focusLog.getLogTags().add(logTag);
             }
@@ -55,10 +64,10 @@ public class FocusLogService {
         if (imageUrls != null) {
             for (int i = 0; i < imageUrls.size(); i++) {
                 FocusLogImage image = FocusLogImage.builder()
-                        .focusLog(focusLog)
-                        .imageUrl(imageUrls.get(i))
-                        .orderIndex(i)
-                        .build();
+                    .focusLog(focusLog)
+                    .imageUrl(imageUrls.get(i))
+                    .orderIndex(i)
+                    .build();
                 focusLog.getImages().add(image);
             }
         }

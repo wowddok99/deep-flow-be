@@ -8,21 +8,21 @@ import lombok.Builder;
 
 @Builder
 public record SessionSummaryResponse(
-                Long id,
-                LocalDateTime startTime,
-                LocalDateTime endTime,
-                Long durationSeconds,
-                SessionStatus status,
-                String summary) {
-
-        public static SessionSummaryResponse from(FocusSession session) {
-                return SessionSummaryResponse.builder()
-                                .id(session.getId())
-                                .startTime(session.getStartTime())
-                                .endTime(session.getEndTime())
-                                .durationSeconds(session.getDurationSeconds())
-                                .status(session.getStatus())
-                                .summary(session.getFocusLog().getSummary())
-                                .build();
-        }
+    Long id,
+    LocalDateTime startTime,
+    LocalDateTime endTime,
+    Long durationSeconds,
+    SessionStatus status,
+    String summary
+) {
+    public static SessionSummaryResponse from(FocusSession session) {
+        return SessionSummaryResponse.builder()
+            .id(session.getId())
+            .startTime(session.getStartTime())
+            .endTime(session.getEndTime())
+            .durationSeconds(session.getDurationSeconds())
+            .status(session.getStatus())
+            .summary(session.getFocusLog().getSummary())
+            .build();
+    }
 }
