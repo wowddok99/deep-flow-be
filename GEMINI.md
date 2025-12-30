@@ -3,6 +3,9 @@ Always respond in Korean (한국어).
 
 # Code Style Guidelines (Strict)
 
+## 0. Project Configuration
+- **Forbidden Files**: **DO NOT** create `gradle.properties`. This file is explicitly excluded.
+
 ## 1. Indentation & Nesting (The Golden Rule)
 - **Unit**: **4 Spaces** (No Tabs).
 - **Rule**: Every new scope or wrapped line must be indented **exactly 1 level (+4 spaces)** relative to the parent line.
