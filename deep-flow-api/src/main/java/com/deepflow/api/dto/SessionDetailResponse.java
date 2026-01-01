@@ -4,8 +4,9 @@ import com.deepflow.core.domain.session.FocusSession;
 import com.deepflow.core.domain.session.SessionStatus;
 import java.time.LocalDateTime;
 import java.util.List;
-
 import lombok.Builder;
+
+import java.util.Map;
 
 @Builder
 public record SessionDetailResponse(
@@ -14,10 +15,9 @@ public record SessionDetailResponse(
     LocalDateTime endTime,
     Long durationSeconds,
     SessionStatus status,
-    String content,
+    Map<String, Object> content,
     String title,
     String summary,
-    List<String> tags,
     List<String> imageUrls
 ) {
     public static SessionDetailResponse from(FocusSession session) {
@@ -30,9 +30,6 @@ public record SessionDetailResponse(
             .content(session.getFocusLog().getContent())
             .title(session.getFocusLog().getTitle())
             .summary(session.getFocusLog().getSummary())
-            .tags(session.getFocusLog().getLogTags().stream()
-                .map(logTag -> logTag.getTag().getName())
-                .toList())
             .imageUrls(session.getFocusLog().getImages().stream()
                 .map(image -> image.getImageUrl())
                 .toList())

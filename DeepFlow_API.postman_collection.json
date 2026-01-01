@@ -1,157 +1,401 @@
 {
-    "info": {
-        "_postman_id": "c1a2b3d4-e5f6-7890-a1b2-c3d4e5f67890",
-        "name": "DeepFlow API",
-        "description": "DeepFlow Backend API Collection for Focus Session management.",
-        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-    },
-    "item": [
-        {
-            "name": "Start Session",
-            "request": {
-                "method": "POST",
-                "header": [],
-                "url": {
-                    "raw": "http://localhost:8080/api/v1/sessions/start",
-                    "protocol": "http",
-                    "host": [
-                        "localhost"
-                    ],
-                    "port": "8080",
-                    "path": [
-                        "api",
-                        "v1",
-                        "sessions",
-                        "start"
-                    ]
-                },
-                "description": "Starts a new focus session."
-            },
-            "response": []
-        },
-        {
-            "name": "Get All Sessions",
-            "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                    "raw": "http://localhost:8080/api/v1/sessions",
-                    "protocol": "http",
-                    "host": [
-                        "localhost"
-                    ],
-                    "port": "8080",
-                    "path": [
-                        "api",
-                        "v1",
-                        "sessions"
-                    ]
-                },
-                "description": "Retrieves a summary list of all sessions."
-            },
-            "response": []
-        },
-        {
-            "name": "Get Session Detail",
-            "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                    "raw": "http://localhost:8080/api/v1/sessions/:id",
-                    "protocol": "http",
-                    "host": [
-                        "localhost"
-                    ],
-                    "port": "8080",
-                    "path": [
-                        "api",
-                        "v1",
-                        "sessions",
-                        ":id"
-                    ],
-                    "variable": [
-                        {
-                            "key": "id",
-                            "value": "1",
-                            "description": "Session ID"
-                        }
-                    ]
-                },
-                "description": "Retrieves detailed information for a specific session."
-            },
-            "response": []
-        },
-        {
-            "name": "Update Session Log",
-            "request": {
-                "method": "PUT",
-                "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json",
-                        "type": "text"
-                    }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n  \"content\": \"백엔드 API 성능 개선을 위한 리팩토링 진행.\",\n  \"summary\": \"SessionController 구현 완료.\",\n  \"tags\": [\n    \"#refactor\",\n    \"#backend\",\n    \"#java\"\n  ],\n  \"imageUrls\": [\n    \"https://example.com/image1.png\",\n    \"https://example.com/image2.png\"\n  ]\n}"
-                },
-                "url": {
-                    "raw": "http://localhost:8080/api/v1/sessions/:id/log",
-                    "protocol": "http",
-                    "host": [
-                        "localhost"
-                    ],
-                    "port": "8080",
-                    "path": [
-                        "api",
-                        "v1",
-                        "sessions",
-                        ":id",
-                        "log"
-                    ],
-                    "variable": [
-                        {
-                            "key": "id",
-                            "value": "1",
-                            "description": "Session ID"
-                        }
-                    ]
-                },
-                "description": "Updates the content and tags of a session log."
-            },
-            "response": []
-        },
-        {
-            "name": "Stop Session",
-            "request": {
-                "method": "POST",
-                "header": [],
-                "url": {
-                    "raw": "http://localhost:8080/api/v1/sessions/:id/stop",
-                    "protocol": "http",
-                    "host": [
-                        "localhost"
-                    ],
-                    "port": "8080",
-                    "path": [
-                        "api",
-                        "v1",
-                        "sessions",
-                        ":id",
-                        "stop"
-                    ],
-                    "variable": [
-                        {
-                            "key": "id",
-                            "value": "1",
-                            "description": "Session ID"
-                        }
-                    ]
-                },
-                "description": "Stops an ongoing session."
-            },
-            "response": []
-        }
-    ]
+	"info": {
+		"_postman_id": "c1a2b3d4-e5f6-7890-a1b2-c3d4e5f67890",
+		"name": "DeepFlow API",
+		"description": "DeepFlow Backend API Collection for Focus Session management with JWT Authentication.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Signup",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"password123\",\n    \"name\": \"Test User\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/signup",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"signup"
+							]
+						},
+						"description": "Registers a new user."
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.environment.set(\"accessToken\", jsonData.accessToken);",
+									"console.log(\"Access Token set:\", jsonData.accessToken);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Logs in and retrieves Access Token. Refresh Token is stored in HttpOnly cookie."
+					},
+					"response": []
+				},
+				{
+					"name": "Reissue Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.environment.set(\"accessToken\", jsonData.accessToken);",
+									"console.log(\"New Access Token set:\", jsonData.accessToken);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/reissue",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"reissue"
+							]
+						},
+						"description": "Reissues a new Access Token using the Refresh Token cookie. Implements RTR."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Logs out the user, invalidating the session on server and clearing cookie."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Sessions",
+			"item": [
+				{
+					"name": "Start Session",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sessions/start",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sessions",
+								"start"
+							]
+						},
+						"description": "Starts a new focus session."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Sessions",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sessions?size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sessions"
+							],
+							"query": [
+								{
+									"key": "cursorId",
+									"value": "10",
+									"disabled": true
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Retrieves a paginated list of sessions."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Session Detail",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sessions/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sessions",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1",
+									"description": "Session ID"
+								}
+							]
+						},
+						"description": "Retrieves detailed information for a specific session."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Session Log",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"집중 세션 #1\",\n  \"content\": {\n    \"type\": \"doc\",\n    \"content\": [\n      {\n        \"type\": \"paragraph\",\n        \"content\": [\n          {\n            \"type\": \"text\",\n            \"text\": \"123213\"\n          }\n        ]\n      }\n    ]\n  },\n  \"summary\": \"SessionController 구현 완료.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sessions/:id/log",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sessions",
+								":id",
+								"log"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1",
+									"description": "Session ID"
+								}
+							]
+						},
+						"description": "Updates the content and tags of a session log."
+					},
+					"response": []
+				},
+				{
+					"name": "Stop Session",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sessions/:id/stop",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sessions",
+								":id",
+								"stop"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1",
+									"description": "Session ID"
+								}
+							]
+						},
+						"description": "Stops an ongoing session."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Session",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sessions/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sessions",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1",
+									"description": "Session ID"
+								}
+							]
+						},
+						"description": "Deletes a session."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		}
+	]
 }

@@ -19,3 +19,15 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+jwt:
+  secret: ${JWT_SECRET:ZnJvbV9kZWVwX2Zsb3dfYXBwbGljYXRpb25fYmFja2VuZF9zZWNyZXRfa2V5XzEyMzQ1Njc4OTAxMjM0NTY3ODkw}
+  access-token-validity-in-seconds: 3600 # 1 hour
+  refresh-token-validity-in-seconds: 604800 # 7 days
+
+app:
+  auth:
+    cookie:
+      secure: ${APP_AUTH_COOKIE_SECURE:false}
+      same-site: ${APP_AUTH_COOKIE_SAME_SITE:Lax}
+      max-age: ${APP_AUTH_COOKIE_MAX_AGE:604800} # 7 days

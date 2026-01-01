@@ -23,6 +23,10 @@ Always respond in Korean (한국어).
 ## 4. Empty Body
 - If the body of a class or record is empty, combine the closing parenthesis and braces: `) {}`.
 
+## 5. Imports & Annotations (Strict)
+- **Rule**: **NEVER** use Fully Qualified Class Names (FQCN) in annotations or variable declarations (e.g., `com.fasterxml.jackson.annotation.JsonIgnore`, `jakarta.validation.Valid`).
+- **Requirement**: Always import the class explicitly and use its simple name.
+
 ---
 
 ### ✅ Correct Example (DO THIS)
