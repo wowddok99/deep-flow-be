@@ -1,6 +1,7 @@
 package com.deepflow.api.service.session;
 
 import com.deepflow.api.dto.*;
+import com.deepflow.api.dto.CursorResponse;
 import com.deepflow.core.domain.session.FocusSession;
 import com.deepflow.api.exception.ResourceNotFoundException;
 import com.deepflow.core.repository.session.FocusSessionRepository;
@@ -10,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
+
 
 import com.deepflow.api.service.log.FocusLogService;
 
@@ -31,10 +34,26 @@ public class SessionService {
         return SessionResponse.from(savedSession);
     }
 
-    public List<SessionSummaryResponse> getAllSessions() {
-        return sessionRepository.findAllByOrderByStartTimeDesc().stream()
+    public CursorResponse<SessionSummaryResponse> getAllSessions(Long cursorId, int size) {
+        org.springframework.data.domain.PageRequest pageRequest = org.springframework.data.domain.PageRequest.of(0, size);
+        org.springframework.data.domain.Slice<FocusSession> slice;
+
+        if (cursorId == null) {
+            slice = sessionRepository.findAllByOrderByIdDesc(pageRequest);
+        } else {
+            slice = sessionRepository.findByIdLessThanOrderByIdDesc(cursorId, pageRequest);
+        }
+
+        List<SessionSummaryResponse> content = slice.getContent().stream()
                 .map(SessionSummaryResponse::from)
                 .toList();
+
+        Long nextCursorId = null;
+        if (!content.isEmpty()) {
+            nextCursorId = content.get(content.size() - 1).id();
+        }
+
+        return new CursorResponse<>(content, nextCursorId, slice.hasNext());
     }
 
     public SessionDetailResponse getSessionDetail(Long id) {

@@ -1,13 +1,15 @@
 package com.deepflow.api.controller.session;
 
 import com.deepflow.api.dto.*;
+import com.deepflow.api.dto.CursorResponse;
 import com.deepflow.api.service.session.SessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+
+
 
 @Tag(name = "Focus Session", description = "Focus Session & Logging API")
 @RestController
@@ -25,8 +27,11 @@ public class SessionController {
 
     @Operation(summary = "Get All Sessions (Summary)")
     @GetMapping
-    public List<SessionSummaryResponse> getAllSessions() {
-        return sessionService.getAllSessions();
+    public CursorResponse<SessionSummaryResponse> getAllSessions(
+            @RequestParam(required = false) Long cursorId,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return sessionService.getAllSessions(cursorId, size);
     }
 
     @Operation(summary = "Get Session Detail")
