@@ -83,6 +83,11 @@ public class SessionService {
     @Transactional
     public void deleteSession(Long id) {
         FocusSession session = getOwnedSession(id, getCurrentUserId());
+        
+        if (session.getStatus() == SessionStatus.ONGOING) {
+            throw new IllegalStateException("Cannot delete an ongoing session");
+        }
+        
         sessionRepository.delete(session);
     }
 
