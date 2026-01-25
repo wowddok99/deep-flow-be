@@ -20,6 +20,11 @@ services:
       - sticky_volume:/var/lib/mysql
       - ./db/config/:/docker-entrypoint-initdb.d/
 
+  redis:
+    image: redis:alpine
+    ports:
+      - 6379:6379
+
 # Volume Container
 volumes:
   sticky_volume:
