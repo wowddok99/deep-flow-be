@@ -3,6 +3,8 @@ package com.deepflow.api.service.session;
 import com.deepflow.api.dto.*;
 import com.deepflow.api.dto.CursorResponse;
 import com.deepflow.api.exception.ResourceNotFoundException;
+import com.deepflow.api.exception.session.SessionAlreadyExistsException;
+import com.deepflow.api.exception.session.SessionNotDeletableException;
 import com.deepflow.api.service.log.FocusLogService;
 import com.deepflow.core.annotation.DistributedLock;
 import com.deepflow.core.domain.session.FocusSession;
@@ -42,7 +44,7 @@ public class SessionService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (sessionRepository.existsByUserIdAndStatus(user.getId(), SessionStatus.ONGOING)) {
-            throw new IllegalStateException("An ongoing session already exists");
+            throw new SessionAlreadyExistsException();
         }
 
         FocusSession session = FocusSession.create(LocalDateTime.now(), user);
@@ -53,9 +55,9 @@ public class SessionService {
         Long userId = getCurrentUserId();
         PageRequest pageRequest = PageRequest.of(0, size);
 
-        Slice<FocusSession> slice = (cursorId == null) ?
-            sessionRepository.findAllByUserIdOrderByIdDesc(userId, pageRequest) :
-            sessionRepository.findByUserIdAndIdLessThanOrderByIdDesc(userId, cursorId, pageRequest);
+        Slice<FocusSession> slice = (cursorId == null)
+                ? sessionRepository.findAllByUserIdOrderByIdDesc(userId, pageRequest)
+                : sessionRepository.findByUserIdAndIdLessThanOrderByIdDesc(userId, cursorId, pageRequest);
 
         List<SessionSummaryResponse> content = slice.getContent().stream()
                 .map(SessionSummaryResponse::from)
@@ -90,26 +92,24 @@ public class SessionService {
     public void stopSession(Long id) {
         FocusSession session = getOwnedSession(id, getCurrentUserId());
         session.stop(LocalDateTime.now());
-        
+
         eventPublisher.publishEvent(new SessionStoppedEvent(
-            session.getId(),
-            session.getUser().getId(),
-            session.getDurationSeconds()
-        ));
+                session.getId(),
+                session.getUser().getId(),
+                session.getDurationSeconds()));
     }
 
     @Transactional
     @CacheEvict(value = "sessions", key = "#id")
     public void deleteSession(Long id) {
         FocusSession session = getOwnedSession(id, getCurrentUserId());
-        
+
         if (session.getStatus() == SessionStatus.ONGOING) {
-            throw new IllegalStateException("Cannot delete an ongoing session");
+            throw new SessionNotDeletableException();
         }
-        
+
         sessionRepository.delete(session);
     }
-
 
     private FocusSession getOwnedSession(Long sessionId, Long userId) {
         return sessionRepository.findByIdAndUserId(sessionId, userId)
@@ -120,7 +120,7 @@ public class SessionService {
     private Long getCurrentUserId() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal instanceof CustomUserDetails details) {
-             return details.getUserId();
+            return details.getUserId();
         }
         return getCurrentUserEntity().getId();
     }
