@@ -1,38 +1,35 @@
 package com.deepflow.api.dto;
 
-import com.deepflow.core.domain.session.FocusSession;
 import com.deepflow.core.domain.session.SessionStatus;
-import java.time.LocalDateTime;
-import java.util.List;
+import com.fasterxml.jackson.databind.JsonNode;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Builder
+@Schema(description = "Session detail response")
 public record SessionDetailResponse(
+    @Schema(description = "Session ID", example = "1")
     Long id,
+    @Schema(description = "Session start time", example = "2025-01-15T10:30:00")
     LocalDateTime startTime,
+    @Schema(description = "Session end time", example = "2025-01-15T12:00:00")
     LocalDateTime endTime,
+    @Schema(description = "Duration in seconds", example = "5400")
     Long durationSeconds,
+    @Schema(description = "Session status", example = "COMPLETED")
     SessionStatus status,
-    Map<String, Object> content,
+    @Schema(description = "TipTap editor content (JSON)")
+    JsonNode content,
+    @Schema(description = "Log title", example = "Spring Boot study")
     String title,
+    @Schema(description = "Log summary", example = "Studied JPA and Spring Security")
     String summary,
+    @Schema(description = "AI-generated summary")
+    String aiSummary,
+    @Schema(description = "Attached image URLs")
     List<String> imageUrls
 ) {
-    public static SessionDetailResponse from(FocusSession session) {
-        return SessionDetailResponse.builder()
-            .id(session.getId())
-            .startTime(session.getStartTime())
-            .endTime(session.getEndTime())
-            .durationSeconds(session.getDurationSeconds())
-            .status(session.getStatus())
-            .content(session.getFocusLog().getContent())
-            .title(session.getFocusLog().getTitle())
-            .summary(session.getFocusLog().getSummary())
-            .imageUrls(session.getFocusLog().getImages().stream()
-                .map(image -> image.getImageUrl())
-                .toList())
-            .build();
-    }
 }

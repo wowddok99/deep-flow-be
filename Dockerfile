@@ -15,4 +15,4 @@ ENV TZ=Asia/Seoul
 WORKDIR /app
 COPY --from=builder /app/deep-flow-api/build/libs/*.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-Duser.timezone=Asia/Seoul", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Duser.timezone=Asia/Seoul", "-Dspring.profiles.active=prod", "-jar", "app.jar"]

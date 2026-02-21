@@ -1,10 +1,10 @@
 package com.deepflow.api.service.session;
 
 import com.deepflow.api.dto.*;
-import com.deepflow.api.dto.CursorResponse;
 import com.deepflow.api.exception.ResourceNotFoundException;
 import com.deepflow.api.exception.session.SessionAlreadyExistsException;
 import com.deepflow.api.exception.session.SessionNotDeletableException;
+import com.deepflow.api.mapper.SessionMapper;
 import com.deepflow.api.service.log.FocusLogService;
 import com.deepflow.core.annotation.DistributedLock;
 import com.deepflow.core.domain.session.FocusSession;
@@ -19,6 +19,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +38,7 @@ public class SessionService {
     private final UserRepository userRepository;
     private final FocusLogService focusLogService;
     private final ApplicationEventPublisher eventPublisher;
+    private final SessionMapper sessionMapper;
 
     @Transactional
     @DistributedLock(key = "'session_start:' + #userId")
@@ -48,30 +51,33 @@ public class SessionService {
         }
 
         FocusSession session = FocusSession.create(LocalDateTime.now(), user);
-        return SessionResponse.from(sessionRepository.save(session));
+        return sessionMapper.toSessionResponse(sessionRepository.save(session));
     }
 
+    // 커서 기반 페이지네이션으로 세션 목록 조회
     public CursorResponse<SessionSummaryResponse> getAllSessions(Long cursorId, int size) {
         Long userId = getCurrentUserId();
         PageRequest pageRequest = PageRequest.of(0, size);
 
+        // 첫 페이지는 cursorId 없이, 이후는 커서 기준으로 그 다음 데이터 조회
         Slice<FocusSession> slice = (cursorId == null)
-                ? sessionRepository.findAllByUserIdOrderByIdDesc(userId, pageRequest)
-                : sessionRepository.findByUserIdAndIdLessThanOrderByIdDesc(userId, cursorId, pageRequest);
+                ? sessionRepository.findAllByUserIdWithLog(userId, pageRequest)
+                : sessionRepository.findByUserIdAndIdLessThanWithLog(userId, cursorId, pageRequest);
 
         List<SessionSummaryResponse> content = slice.getContent().stream()
-                .map(SessionSummaryResponse::from)
+                .map(sessionMapper::toSessionSummaryResponse)
                 .toList();
 
+        // 마지막 항목의 ID를 다음 커서로 사용
         Long nextCursorId = content.isEmpty() ? null : content.get(content.size() - 1).id();
-
         return new CursorResponse<>(content, nextCursorId, slice.hasNext());
     }
 
     @Cacheable(value = "sessions", key = "#id")
     public SessionDetailResponse getSessionDetail(Long id) {
-        FocusSession session = getOwnedSession(id, getCurrentUserId());
-        return SessionDetailResponse.from(session);
+        FocusSession session = sessionRepository.findByIdAndUserIdWithLogAndImages(id, getCurrentUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + id));
+        return sessionMapper.toSessionDetailResponse(session);
     }
 
     @Transactional
@@ -79,10 +85,12 @@ public class SessionService {
     public void updateLog(Long id, LogUpdateRequest request) {
         FocusSession session = getOwnedSession(id, getCurrentUserId());
 
+        String contentJson = request.content() != null ? request.content().toString() : null;
+
         focusLogService.updateLogDetails(
                 session.getFocusLog(),
                 request.title(),
-                request.content(),
+                contentJson,
                 request.summary(),
                 request.imageUrls());
     }
@@ -93,6 +101,7 @@ public class SessionService {
         FocusSession session = getOwnedSession(id, getCurrentUserId());
         session.stop(LocalDateTime.now());
 
+        // SessionEventListener가 AFTER_COMMIT 시점에 비동기로 수신
         eventPublisher.publishEvent(new SessionStoppedEvent(
                 session.getId(),
                 session.getUser().getId(),
@@ -108,7 +117,7 @@ public class SessionService {
             throw new SessionNotDeletableException();
         }
 
-        sessionRepository.delete(session);
+        session.softDelete();
     }
 
     private FocusSession getOwnedSession(Long sessionId, Long userId) {
@@ -116,19 +125,11 @@ public class SessionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + sessionId));
     }
 
-    // DB 조회 없이 SecurityContext에서 ID만 꺼내는 메서드
     private Long getCurrentUserId() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof CustomUserDetails details) {
-            return details.getUserId();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails details)) {
+            throw new AccessDeniedException("인증 정보가 없습니다.");
         }
-        return getCurrentUserEntity().getId();
-    }
-
-    // DB에서 User 엔티티 조회하는 메서드
-    private User getCurrentUserEntity() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        return details.getUserId();
     }
 }

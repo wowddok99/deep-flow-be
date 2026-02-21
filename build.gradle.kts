@@ -37,7 +37,14 @@ subprojects {
     dependencies {
         compileOnly("org.projectlombok:lombok")
         annotationProcessor("org.projectlombok:lombok")
+        annotationProcessor("org.projectlombok:lombok-mapstruct-binding:0.2.0")
         testImplementation("org.springframework.boot:spring-boot-starter-test")
+    }
+
+    tasks.withType<JavaCompile> {
+        options.compilerArgs.addAll(listOf(
+            "-Amapstruct.defaultComponentModel=spring"
+        ))
     }
 
     tasks.withType<Test> {

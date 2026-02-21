@@ -9,6 +9,9 @@ import lombok.*;
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(indexes = {
+        @Index(name = "idx_focus_log_image_log_order", columnList = "focus_log_id, orderIndex")
+})
 public class FocusLogImage extends BaseTimeEntity {
 
     @Id

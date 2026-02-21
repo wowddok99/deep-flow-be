@@ -4,12 +4,15 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.UUID;
 
+@Slf4j
 @Component
 public class JwtProvider {
 
@@ -40,10 +43,11 @@ public class JwtProvider {
         Date validityDate = new Date(now.getTime() + validity);
 
         var builder = Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(username)
                 .issuedAt(now)
                 .expiration(validityDate)
-                .signWith(key);
+                .signWith(key); // HMAC-SHA 서명
 
         if (role != null) {
             builder.claim("role", role);
@@ -61,6 +65,7 @@ public class JwtProvider {
             Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
             return true;
         } catch (Exception e) {
+            log.debug("Token validation failed: {}", e.getMessage());
             return false;
         }
     }

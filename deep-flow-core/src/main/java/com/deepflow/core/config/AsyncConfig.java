@@ -13,11 +13,10 @@ public class AsyncConfig {
 
     @Bean(name = "threadPoolTaskExecutor")
     public Executor threadPoolTaskExecutor() {
-        // 비동기 작업 처리를 위한 스레드 풀 설정
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(5);
-        executor.setMaxPoolSize(30);
-        executor.setQueueCapacity(50);
+        executor.setCorePoolSize(5);       // 평상시 유지되는 스레드
+        executor.setMaxPoolSize(30);       // 큐 포화 시 확장 가능한 최대 스레드
+        executor.setQueueCapacity(50);     // 코어 스레드 초과 요청 대기열
         executor.setThreadNamePrefix("Async-");
         executor.initialize();
         return executor;

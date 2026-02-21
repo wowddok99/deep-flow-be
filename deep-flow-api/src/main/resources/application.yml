@@ -1,22 +1,19 @@
 spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3307/demo?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul}
-    username: ${SPRING_DATASOURCE_USERNAME:root}
-    password: ${SPRING_DATASOURCE_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
-    hibernate:
-      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
-        show_sql: true
         dialect: org.hibernate.dialect.MySQLDialect
 
 springdoc:
@@ -27,12 +24,29 @@ springdoc:
 
 jwt:
   secret: ${JWT_SECRET:ZnJvbV9kZWVwX2Zsb3dfYXBwbGljYXRpb25fYmFja2VuZF9zZWNyZXRfa2V5XzEyMzQ1Njc4OTAxMjM0NTY3ODkw}
-  access-token-validity-in-seconds: 3600 # 1 hour
-  refresh-token-validity-in-seconds: 604800 # 7 days
+  access-token-validity-in-seconds: 3600
+  refresh-token-validity-in-seconds: 604800
 
 app:
+  cors:
+    allowed-origins: http://localhost:3000
   auth:
     cookie:
-      secure: ${APP_AUTH_COOKIE_SECURE:false}
-      same-site: ${APP_AUTH_COOKIE_SAME_SITE:Lax}
-      max-age: ${APP_AUTH_COOKIE_MAX_AGE:604800} # 7 days
+      secure: false
+      same-site: Lax
+      max-age: ${APP_AUTH_COOKIE_MAX_AGE:604800}
+  ai:
+    enabled: ${AI_ENABLED:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus, metrics, info
+  endpoint:
+    health:
+      show-details: when-authorized
+  prometheus:
+    metrics:
+      export:
+        enabled: true
