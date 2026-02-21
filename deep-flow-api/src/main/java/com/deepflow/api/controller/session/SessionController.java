@@ -5,9 +5,11 @@ import com.deepflow.api.dto.CursorResponse;
 import com.deepflow.api.service.session.SessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
+import com.deepflow.api.security.CustomUserDetails;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 @Tag(name = "Focus Session", description = "Focus Session & Logging API")
 @RestController
@@ -19,8 +21,10 @@ public class SessionController {
 
     @Operation(summary = "Start Focus Session")
     @PostMapping("/start")
-    public SessionResponse startSession() {
-        return sessionService.startSession();
+    public SessionResponse startSession(
+        @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        return sessionService.startSession(userDetails.getUserId());
     }
 
     @Operation(summary = "Get All Sessions (Summary)")

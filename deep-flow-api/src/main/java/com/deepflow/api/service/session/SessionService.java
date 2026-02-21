@@ -3,19 +3,27 @@ package com.deepflow.api.service.session;
 import com.deepflow.api.dto.*;
 import com.deepflow.api.dto.CursorResponse;
 import com.deepflow.api.exception.ResourceNotFoundException;
+import com.deepflow.api.exception.session.SessionAlreadyExistsException;
+import com.deepflow.api.exception.session.SessionNotDeletableException;
 import com.deepflow.api.service.log.FocusLogService;
+import com.deepflow.core.annotation.DistributedLock;
 import com.deepflow.core.domain.session.FocusSession;
 import com.deepflow.core.domain.session.SessionStatus;
+import com.deepflow.core.domain.session.event.SessionStoppedEvent;
 import com.deepflow.core.domain.user.User;
 import com.deepflow.core.repository.session.FocusSessionRepository;
 import com.deepflow.core.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.deepflow.api.security.CustomUserDetails;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -27,13 +35,16 @@ public class SessionService {
     private final FocusSessionRepository sessionRepository;
     private final UserRepository userRepository;
     private final FocusLogService focusLogService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
-    public SessionResponse startSession() {
-        User user = getCurrentUserEntity();
+    @DistributedLock(key = "'session_start:' + #userId")
+    public SessionResponse startSession(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (sessionRepository.existsByUserIdAndStatus(user.getId(), SessionStatus.ONGOING)) {
-            throw new IllegalStateException("An ongoing session already exists");
+            throw new SessionAlreadyExistsException();
         }
 
         FocusSession session = FocusSession.create(LocalDateTime.now(), user);
@@ -44,9 +55,9 @@ public class SessionService {
         Long userId = getCurrentUserId();
         PageRequest pageRequest = PageRequest.of(0, size);
 
-        Slice<FocusSession> slice = (cursorId == null) ?
-            sessionRepository.findAllByUserIdOrderByIdDesc(userId, pageRequest) :
-            sessionRepository.findByUserIdAndIdLessThanOrderByIdDesc(userId, cursorId, pageRequest);
+        Slice<FocusSession> slice = (cursorId == null)
+                ? sessionRepository.findAllByUserIdOrderByIdDesc(userId, pageRequest)
+                : sessionRepository.findByUserIdAndIdLessThanOrderByIdDesc(userId, cursorId, pageRequest);
 
         List<SessionSummaryResponse> content = slice.getContent().stream()
                 .map(SessionSummaryResponse::from)
@@ -57,12 +68,14 @@ public class SessionService {
         return new CursorResponse<>(content, nextCursorId, slice.hasNext());
     }
 
+    @Cacheable(value = "sessions", key = "#id")
     public SessionDetailResponse getSessionDetail(Long id) {
         FocusSession session = getOwnedSession(id, getCurrentUserId());
         return SessionDetailResponse.from(session);
     }
 
     @Transactional
+    @CacheEvict(value = "sessions", key = "#id")
     public void updateLog(Long id, LogUpdateRequest request) {
         FocusSession session = getOwnedSession(id, getCurrentUserId());
 
@@ -75,22 +88,28 @@ public class SessionService {
     }
 
     @Transactional
+    @CacheEvict(value = "sessions", key = "#id")
     public void stopSession(Long id) {
         FocusSession session = getOwnedSession(id, getCurrentUserId());
         session.stop(LocalDateTime.now());
+
+        eventPublisher.publishEvent(new SessionStoppedEvent(
+                session.getId(),
+                session.getUser().getId(),
+                session.getDurationSeconds()));
     }
 
     @Transactional
+    @CacheEvict(value = "sessions", key = "#id")
     public void deleteSession(Long id) {
         FocusSession session = getOwnedSession(id, getCurrentUserId());
-        
+
         if (session.getStatus() == SessionStatus.ONGOING) {
-            throw new IllegalStateException("Cannot delete an ongoing session");
+            throw new SessionNotDeletableException();
         }
-        
+
         sessionRepository.delete(session);
     }
-
 
     private FocusSession getOwnedSession(Long sessionId, Long userId) {
         return sessionRepository.findByIdAndUserId(sessionId, userId)
@@ -100,8 +119,8 @@ public class SessionService {
     // DB 조회 없이 SecurityContext에서 ID만 꺼내는 메서드
     private Long getCurrentUserId() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof com.deepflow.api.security.CustomUserDetails details) {
-             return details.getUserId();
+        if (principal instanceof CustomUserDetails details) {
+            return details.getUserId();
         }
         return getCurrentUserEntity().getId();
     }
