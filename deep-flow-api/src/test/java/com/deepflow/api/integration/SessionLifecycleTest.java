@@ -1,10 +1,10 @@
 package com.deepflow.api.integration;
 
 import com.deepflow.api.dto.LogUpdateRequest;
-import com.deepflow.core.domain.session.FocusSession;
-import com.deepflow.core.domain.session.SessionStatus;
-import com.deepflow.core.domain.stats.DailyFocusStats;
-import com.deepflow.core.domain.user.User;
+import com.deepflow.domain.session.FocusSession;
+import com.deepflow.domain.session.SessionStatus;
+import com.deepflow.domain.stats.DailyFocusStats;
+import com.deepflow.domain.user.User;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -52,7 +52,6 @@ class SessionLifecycleTest extends BaseIntegrationTest {
                     result.getResponse().getContentAsString()
             ).path("data").path("id").asLong();
 
-            // FocusLog가 함께 생성되었는지 DB에서 직접 확인 (lazy loading 우회)
             String content = jdbcTemplate.queryForObject(
                     "SELECT fl.content FROM focus_log fl " +
                     "JOIN focus_session fs ON fs.focus_log_id = fl.id WHERE fs.id = ?",
@@ -99,7 +98,6 @@ class SessionLifecycleTest extends BaseIntegrationTest {
                             .content(objectMapper.writeValueAsString(logRequest)))
                     .andExpect(status().isOk());
 
-            // 상세 조회로 저장 확인
             mockMvc.perform(get(BASE_URL + "/{id}", sessionId)
                             .header("Authorization", "Bearer " + accessToken))
                     .andExpect(status().isOk())
@@ -138,7 +136,6 @@ class SessionLifecycleTest extends BaseIntegrationTest {
         void 세션_종료() throws Exception {
             Long sessionId = startSessionAndGetId();
 
-            // 약간의 시간차를 두고 종료
             Thread.sleep(100);
 
             mockMvc.perform(post(BASE_URL + "/{id}/stop", sessionId)
@@ -162,7 +159,6 @@ class SessionLifecycleTest extends BaseIntegrationTest {
 
             User user = userRepository.findByUsername("testuser").orElseThrow();
 
-            // 비동기 이벤트 처리 대기
             await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
                 Optional<DailyFocusStats> stats = dailyFocusStatsRepository
                         .findByUserIdAndDate(user.getId(), LocalDate.now());
@@ -174,7 +170,6 @@ class SessionLifecycleTest extends BaseIntegrationTest {
         @Test
         @DisplayName("여러 세션을 종료하면 통계가 누적된다")
         void 통계_누적() throws Exception {
-            // 첫 번째 세션
             Long sessionId1 = startSessionAndGetId();
             mockMvc.perform(post(BASE_URL + "/{id}/stop", sessionId1)
                             .header("Authorization", "Bearer " + accessToken))
@@ -189,7 +184,6 @@ class SessionLifecycleTest extends BaseIntegrationTest {
                 assertThat(stats.get().getTotalSessions()).isEqualTo(1);
             });
 
-            // 두 번째 세션
             Long sessionId2 = startSessionAndGetId();
             mockMvc.perform(post(BASE_URL + "/{id}/stop", sessionId2)
                             .header("Authorization", "Bearer " + accessToken))
@@ -212,17 +206,14 @@ class SessionLifecycleTest extends BaseIntegrationTest {
         void 완료된_세션_삭제() throws Exception {
             Long sessionId = startSessionAndGetId();
 
-            // 세션 종료
             mockMvc.perform(post(BASE_URL + "/{id}/stop", sessionId)
                             .header("Authorization", "Bearer " + accessToken))
                     .andExpect(status().isOk());
 
-            // 삭제
             mockMvc.perform(delete(BASE_URL + "/{id}", sessionId)
                             .header("Authorization", "Bearer " + accessToken))
                     .andExpect(status().isNoContent());
 
-            // SQLRestriction에 의해 조회되지 않음
             mockMvc.perform(get(BASE_URL + "/{id}", sessionId)
                             .header("Authorization", "Bearer " + accessToken))
                     .andExpect(status().isNotFound());
@@ -247,14 +238,12 @@ class SessionLifecycleTest extends BaseIntegrationTest {
         @Test
         @DisplayName("커서 기반 페이지네이션으로 세션 목록을 조회한다")
         void 커서_페이지네이션() throws Exception {
-            // 3개의 완료된 세션 생성
             for (int i = 0; i < 3; i++) {
                 Long id = startSessionAndGetId();
                 mockMvc.perform(post(BASE_URL + "/{id}/stop", id)
                         .header("Authorization", "Bearer " + accessToken));
             }
 
-            // 첫 페이지 조회 - size=2
             MvcResult firstPage = mockMvc.perform(get(BASE_URL)
                             .header("Authorization", "Bearer " + accessToken)
                             .param("size", "2"))
@@ -267,7 +256,6 @@ class SessionLifecycleTest extends BaseIntegrationTest {
                     firstPage.getResponse().getContentAsString()
             ).path("data").path("nextCursorId").asLong();
 
-            // 두 번째 페이지 조회
             mockMvc.perform(get(BASE_URL)
                             .header("Authorization", "Bearer " + accessToken)
                             .param("cursorId", nextCursor.toString())
@@ -280,13 +268,10 @@ class SessionLifecycleTest extends BaseIntegrationTest {
         @Test
         @DisplayName("다른 유저의 세션은 조회되지 않는다")
         void 유저_격리() throws Exception {
-            // 첫 번째 유저가 세션 생성
             startSessionAndGetId();
 
-            // 두 번째 유저 생성 및 로그인
             String otherToken = loginAndGetToken("otheruser", "password123", "다른유저");
 
-            // 두 번째 유저는 세션 목록이 비어있어야 함
             mockMvc.perform(get(BASE_URL)
                             .header("Authorization", "Bearer " + otherToken))
                     .andExpect(status().isOk())
@@ -301,10 +286,8 @@ class SessionLifecycleTest extends BaseIntegrationTest {
         @Test
         @DisplayName("세션 시작 - 로그 작성 - 종료 - 상세 조회 - 통계 확인까지 전체 흐름이 정상 동작한다")
         void 세션_전체_흐름() throws Exception {
-            // 1. 세션 시작
             Long sessionId = startSessionAndGetId();
 
-            // 2. 로그 작성
             JsonNode content = objectMapper.readTree(
                     "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"TDD 학습\"}]}]}");
 
@@ -321,12 +304,10 @@ class SessionLifecycleTest extends BaseIntegrationTest {
                             .content(objectMapper.writeValueAsString(logRequest)))
                     .andExpect(status().isOk());
 
-            // 3. 세션 종료
             mockMvc.perform(post(BASE_URL + "/{id}/stop", sessionId)
                             .header("Authorization", "Bearer " + accessToken))
                     .andExpect(status().isOk());
 
-            // 4. 상세 조회 - 모든 데이터가 정합성 있게 반환되는지 확인
             mockMvc.perform(get(BASE_URL + "/{id}", sessionId)
                             .header("Authorization", "Bearer " + accessToken))
                     .andExpect(status().isOk())
@@ -338,7 +319,6 @@ class SessionLifecycleTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.data.endTime").isNotEmpty())
                     .andExpect(jsonPath("$.data.durationSeconds").isNumber());
 
-            // 5. 통계 확인
             User user = userRepository.findByUsername("testuser").orElseThrow();
 
             await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
@@ -347,7 +327,6 @@ class SessionLifecycleTest extends BaseIntegrationTest {
                 assertThat(stats.getTotalSessions()).isEqualTo(1);
             });
 
-            // 6. 통계 API 확인
             mockMvc.perform(get("/api/v1/stats/overview")
                             .header("Authorization", "Bearer " + accessToken))
                     .andExpect(status().isOk())

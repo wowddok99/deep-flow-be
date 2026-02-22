@@ -1,7 +1,10 @@
 package com.deepflow.api.controller.session;
 
 import com.deepflow.api.dto.*;
-import com.deepflow.api.service.session.SessionService;
+import com.deepflow.api.mapper.SessionMapper;
+import com.deepflow.api.security.CustomUserDetails;
+import com.deepflow.application.session.SessionService;
+import com.deepflow.domain.session.FocusSession;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -9,11 +12,15 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.data.domain.Slice;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import com.deepflow.api.security.CustomUserDetails;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Tag(name = "Focus Session", description = "Focus Session & Logging API")
 @RestController
@@ -22,6 +29,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 public class SessionController {
 
     private final SessionService sessionService;
+    private final SessionMapper sessionMapper;
+    private final CacheManager cacheManager;
 
     @Operation(summary = "Start Focus Session")
     @ApiResponses({
@@ -32,8 +41,9 @@ public class SessionController {
     public ResponseEntity<CommonResponse<SessionResponse>> startSession(
         @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
+        FocusSession session = sessionService.startSession(userDetails.getUserId());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(CommonResponse.ok(sessionService.startSession(userDetails.getUserId())));
+                .body(CommonResponse.ok(sessionMapper.toSessionResponse(session)));
     }
 
     @Operation(summary = "Get All Sessions (Summary)")
@@ -42,10 +52,22 @@ public class SessionController {
     })
     @GetMapping
     public ResponseEntity<CommonResponse<CursorResponse<SessionSummaryResponse>>> getAllSessions(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "Cursor ID for pagination") @RequestParam(required = false) Long cursorId,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(CommonResponse.ok(sessionService.getAllSessions(cursorId, size)));
+        Slice<FocusSession> slice = sessionService.getAllSessions(userDetails.getUserId(), cursorId, size);
+
+        List<SessionSummaryResponse> content = slice.getContent().stream()
+                .map(sessionMapper::toSessionSummaryResponse)
+                .toList();
+
+        Long nextCursorId = slice.hasNext()
+                ? slice.getContent().get(slice.getContent().size() - 1).getId()
+                : null;
+
+        CursorResponse<SessionSummaryResponse> response = new CursorResponse<>(content, nextCursorId, slice.hasNext());
+        return ResponseEntity.ok(CommonResponse.ok(response));
     }
 
     @Operation(summary = "Get Session Detail")
@@ -55,9 +77,24 @@ public class SessionController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<CommonResponse<SessionDetailResponse>> getSession(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "Session ID") @PathVariable Long id
     ) {
-        return ResponseEntity.ok(CommonResponse.ok(sessionService.getSessionDetail(id)));
+        Cache cache = cacheManager.getCache("sessions");
+        if (cache != null) {
+            SessionDetailResponse cached = cache.get(id, SessionDetailResponse.class);
+            if (cached != null) {
+                return ResponseEntity.ok(CommonResponse.ok(cached));
+            }
+        }
+
+        FocusSession session = sessionService.getSessionDetail(userDetails.getUserId(), id);
+        SessionDetailResponse detail = sessionMapper.toSessionDetailResponse(session);
+
+        if (cache != null) {
+            cache.put(id, detail);
+        }
+        return ResponseEntity.ok(CommonResponse.ok(detail));
     }
 
     @Operation(summary = "Update Session Log")
@@ -67,10 +104,13 @@ public class SessionController {
     })
     @PutMapping("/{id}/log")
     public ResponseEntity<CommonResponse<Void>> updateLog(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "Session ID") @PathVariable Long id,
             @RequestBody @Valid LogUpdateRequest request
     ) {
-        sessionService.updateLog(id, request);
+        String contentStr = request.content() != null ? request.content().toString() : null;
+        sessionService.updateLog(userDetails.getUserId(), id, request.title(), contentStr, request.summary(), request.imageUrls());
+        evictSessionCache(id);
         return ResponseEntity.ok(CommonResponse.ok());
     }
 
@@ -81,9 +121,11 @@ public class SessionController {
     })
     @PostMapping("/{id}/stop")
     public ResponseEntity<CommonResponse<Void>> stopSession(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "Session ID") @PathVariable Long id
     ) {
-        sessionService.stopSession(id);
+        sessionService.stopSession(userDetails.getUserId(), id);
+        evictSessionCache(id);
         return ResponseEntity.ok(CommonResponse.ok());
     }
 
@@ -95,9 +137,18 @@ public class SessionController {
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<CommonResponse<Void>> deleteSession(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "Session ID") @PathVariable Long id
     ) {
-        sessionService.deleteSession(id);
+        sessionService.deleteSession(userDetails.getUserId(), id);
+        evictSessionCache(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    private void evictSessionCache(Long id) {
+        Cache cache = cacheManager.getCache("sessions");
+        if (cache != null) {
+            cache.evict(id);
+        }
     }
 }

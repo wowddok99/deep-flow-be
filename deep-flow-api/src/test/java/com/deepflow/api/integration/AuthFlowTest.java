@@ -2,7 +2,7 @@ package com.deepflow.api.integration;
 
 import com.deepflow.api.dto.LoginRequest;
 import com.deepflow.api.dto.SignUpRequest;
-import com.deepflow.core.domain.user.User;
+import com.deepflow.domain.user.User;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

@@ -1,7 +1,7 @@
 package com.deepflow.api.integration;
 
-import com.deepflow.core.domain.stats.DailyFocusStats;
-import com.deepflow.core.domain.user.User;
+import com.deepflow.domain.stats.DailyFocusStats;
+import com.deepflow.domain.user.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,7 +41,6 @@ class StatsApiTest extends BaseIntegrationTest {
     @Test
     @DisplayName("주간 통계 조회 시 최근 7일간의 일별 데이터가 반환된다")
     void 주간_통계() throws Exception {
-        // 테스트 데이터 직접 삽입 - 최근 3일 데이터
         LocalDate today = LocalDate.now();
 
         dailyFocusStatsRepository.save(DailyFocusStats.builder()
@@ -58,7 +57,6 @@ class StatsApiTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.data[0].date").value(today.minusDays(2).toString()))
                 .andExpect(jsonPath("$.data[2].date").value(today.toString()));
 
-        // overview에서 주간 합산 확인
         mockMvc.perform(get(STATS_URL + "/overview")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
@@ -73,11 +71,9 @@ class StatsApiTest extends BaseIntegrationTest {
     void 주간_범위_초과() throws Exception {
         LocalDate today = LocalDate.now();
 
-        // 8일 전 데이터 - 주간 범위 밖
         dailyFocusStatsRepository.save(DailyFocusStats.builder()
                 .userId(userId).date(today.minusDays(8)).totalSessions(10).totalDurationSeconds(36000).build());
 
-        // 오늘 데이터 - 주간 범위 안
         dailyFocusStatsRepository.save(DailyFocusStats.builder()
                 .userId(userId).date(today).totalSessions(1).totalDurationSeconds(1800).build());
 
@@ -91,14 +87,12 @@ class StatsApiTest extends BaseIntegrationTest {
     @Test
     @DisplayName("다른 유저의 통계는 조회되지 않는다")
     void 유저_격리() throws Exception {
-        // 다른 유저의 통계 데이터
         String otherToken = loginAndGetToken("otheruser", "password123", "다른유저");
         Long otherUserId = userRepository.findByUsername("otheruser").orElseThrow().getId();
 
         dailyFocusStatsRepository.save(DailyFocusStats.builder()
                 .userId(otherUserId).date(LocalDate.now()).totalSessions(5).totalDurationSeconds(9000).build());
 
-        // 원래 유저의 통계는 0이어야 함
         mockMvc.perform(get(STATS_URL + "/overview")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())

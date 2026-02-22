@@ -1,6 +1,6 @@
 package com.deepflow.api.dto;
 
-import com.deepflow.core.domain.session.SessionStatus;
+import com.deepflow.domain.session.SessionStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 
