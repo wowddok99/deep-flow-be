@@ -1,11 +1,11 @@
 package com.deepflow.api.integration;
 
-import com.deepflow.api.service.auth.AuthService;
-import com.deepflow.core.repository.log.FocusLogImageRepository;
-import com.deepflow.core.repository.session.FocusLogRepository;
-import com.deepflow.core.repository.session.FocusSessionRepository;
-import com.deepflow.core.repository.stats.DailyFocusStatsRepository;
-import com.deepflow.core.repository.user.UserRepository;
+import com.deepflow.application.auth.AuthService;
+import com.deepflow.domain.log.FocusLogImageRepository;
+import com.deepflow.domain.log.FocusLogRepository;
+import com.deepflow.domain.session.FocusSessionRepository;
+import com.deepflow.domain.stats.DailyFocusStatsRepository;
+import com.deepflow.domain.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redis.testcontainers.RedisContainer;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,7 +64,6 @@ public abstract class BaseIntegrationTest {
     void cleanUp() {
         dailyFocusStatsRepository.deleteAllInBatch();
         focusLogImageRepository.deleteAllInBatch();
-        // native SQL로 삭제하여 @SQLRestriction("deleted_at IS NULL") 우회
         jdbcTemplate.execute("DELETE FROM focus_session");
         focusLogRepository.deleteAllInBatch();
         userRepository.deleteAllInBatch();
@@ -78,11 +77,9 @@ public abstract class BaseIntegrationTest {
                 .flushAll();
     }
 
-    // 회원가입 후 로그인하여 access token 반환
     protected String loginAndGetToken(String username, String password, String name) {
-        authService.signup(new com.deepflow.api.dto.SignUpRequest(username, password, name));
-        AuthService.TokenResponse tokens = authService.login(
-                new com.deepflow.api.dto.LoginRequest(username, password));
+        authService.signup(username, password, name);
+        AuthService.TokenResponse tokens = authService.login(username, password);
         return tokens.accessToken();
     }
 }

@@ -4,7 +4,8 @@ import com.deepflow.api.dto.CommonResponse;
 import com.deepflow.api.dto.DailyStatsResponse;
 import com.deepflow.api.dto.StatsOverviewResponse;
 import com.deepflow.api.security.CustomUserDetails;
-import com.deepflow.api.service.stats.DailyFocusStatsService;
+import com.deepflow.application.stats.DailyFocusStatsService;
+import com.deepflow.domain.stats.DailyFocusStats;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -34,7 +35,14 @@ public class StatsController {
     public ResponseEntity<CommonResponse<StatsOverviewResponse>> getOverview(
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        return ResponseEntity.ok(CommonResponse.ok(dailyFocusStatsService.getOverview(userDetails.getUserId())));
+        DailyFocusStatsService.StatsOverview overview = dailyFocusStatsService.getOverview(userDetails.getUserId());
+        StatsOverviewResponse response = new StatsOverviewResponse(
+                overview.todaySessions(),
+                overview.todayDurationSeconds(),
+                overview.weekSessions(),
+                overview.weekDurationSeconds()
+        );
+        return ResponseEntity.ok(CommonResponse.ok(response));
     }
 
     @Operation(summary = "Get daily stats for the last 7 days")
@@ -45,6 +53,10 @@ public class StatsController {
     public ResponseEntity<CommonResponse<List<DailyStatsResponse>>> getWeeklyStats(
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        return ResponseEntity.ok(CommonResponse.ok(dailyFocusStatsService.getWeeklyStats(userDetails.getUserId())));
+        List<DailyFocusStats> stats = dailyFocusStatsService.getWeeklyStats(userDetails.getUserId());
+        List<DailyStatsResponse> response = stats.stream()
+                .map(s -> new DailyStatsResponse(s.getDate(), s.getTotalSessions(), s.getTotalDurationSeconds()))
+                .toList();
+        return ResponseEntity.ok(CommonResponse.ok(response));
     }
 }

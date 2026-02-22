@@ -1,6 +1,6 @@
 package com.deepflow.api.integration;
 
-import com.deepflow.core.domain.session.SessionStatus;
+import com.deepflow.domain.session.SessionStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
