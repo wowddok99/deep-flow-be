@@ -12,6 +12,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Slice;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +30,7 @@ public class SessionController {
 
     private final SessionService sessionService;
     private final SessionMapper sessionMapper;
+    private final CacheManager cacheManager;
 
     @Operation(summary = "Start Focus Session")
     @ApiResponses({
@@ -77,8 +80,21 @@ public class SessionController {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "Session ID") @PathVariable Long id
     ) {
+        Cache cache = cacheManager.getCache("sessions");
+        if (cache != null) {
+            SessionDetailResponse cached = cache.get(id, SessionDetailResponse.class);
+            if (cached != null) {
+                return ResponseEntity.ok(CommonResponse.ok(cached));
+            }
+        }
+
         FocusSession session = sessionService.getSessionDetail(userDetails.getUserId(), id);
-        return ResponseEntity.ok(CommonResponse.ok(sessionMapper.toSessionDetailResponse(session)));
+        SessionDetailResponse detail = sessionMapper.toSessionDetailResponse(session);
+
+        if (cache != null) {
+            cache.put(id, detail);
+        }
+        return ResponseEntity.ok(CommonResponse.ok(detail));
     }
 
     @Operation(summary = "Update Session Log")
@@ -94,6 +110,7 @@ public class SessionController {
     ) {
         String contentStr = request.content() != null ? request.content().toString() : null;
         sessionService.updateLog(userDetails.getUserId(), id, request.title(), contentStr, request.summary(), request.imageUrls());
+        evictSessionCache(id);
         return ResponseEntity.ok(CommonResponse.ok());
     }
 
@@ -108,6 +125,7 @@ public class SessionController {
             @Parameter(description = "Session ID") @PathVariable Long id
     ) {
         sessionService.stopSession(userDetails.getUserId(), id);
+        evictSessionCache(id);
         return ResponseEntity.ok(CommonResponse.ok());
     }
 
@@ -123,6 +141,14 @@ public class SessionController {
             @Parameter(description = "Session ID") @PathVariable Long id
     ) {
         sessionService.deleteSession(userDetails.getUserId(), id);
+        evictSessionCache(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    private void evictSessionCache(Long id) {
+        Cache cache = cacheManager.getCache("sessions");
+        if (cache != null) {
+            cache.evict(id);
+        }
     }
 }
