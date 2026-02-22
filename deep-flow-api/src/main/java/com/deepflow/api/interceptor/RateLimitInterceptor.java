@@ -20,54 +20,52 @@ import java.security.Principal;
 @RequiredArgsConstructor
 public class RateLimitInterceptor implements HandlerInterceptor {
 
+    private static final long SESSION_START_COST = 10;
+    private static final long WRITE_OPERATION_COST = 5;
+    private static final long READ_OPERATION_COST = 1;
+    private static final String SESSION_START_URI = "/api/v1/sessions/start";
+
     private final RateLimiterService rateLimiterService;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String clientIp = getClientIp(request);
         String userId = getUserId(request);
-        
-        // 1. 키 생성 (IP 기반 필수, User 기반 선택)
+
         String ipKey = "rate_limit:ip:" + clientIp;
         String userKey = userId != null ? "rate_limit:user:" + userId : null;
-
-        // 2. 요청 비용 계산 (API별 차등 적용)
         long cost = calculateCost(request);
 
-        // 3. 페널티 대상 IP 확인 (악성 유저 헤더 추가)
         boolean isPenalty = rateLimiterService.isInPenaltyBox(clientIp);
         if (isPenalty) {
-             response.addHeader("X-Rate-Limit-Penalty", "true");
+            response.addHeader("X-Rate-Limit-Penalty", "true");
         }
 
-        // 4. IP Bucket 소모 시도
+        // IP 기반 1차 검증
         Bucket ipBucket = rateLimiterService.resolveBucket(ipKey, isPenalty);
-        ConsumptionProbe ipProbe = ipBucket.tryConsumeAndReturnRemaining(cost);
+        ConsumptionProbe ipProbe = ipBucket.tryConsumeAndReturnRemaining(cost); // IP 버킷에서 cost만큼 토큰 소모
 
         if (ipProbe.isConsumed()) {
-             // 5. IP 통과 시, 로그인 유저는 User Bucket으로 2차 검증
-             if (userKey != null) {
-                 Bucket userBucket = rateLimiterService.resolveBucket(userKey, false);
-                 ConsumptionProbe userProbe = userBucket.tryConsumeAndReturnRemaining(cost);
-                 
-                 // User Bucket 초과 시 차단
-                 if (!userProbe.isConsumed()) {
-                     return handleRateLimitExceeded(response, userProbe.getNanosToWaitForRefill(), clientIp);
-                 }
-                 response.addHeader("X-Rate-Limit-User-Remaining", String.valueOf(userProbe.getRemainingTokens()));
-             }
-             
-            // 모두 통과
+            // IP 통과 시, 로그인 유저는 User Bucket으로 2차 검증
+            if (userKey != null) {
+                Bucket userBucket = rateLimiterService.resolveBucket(userKey, false);
+                ConsumptionProbe userProbe = userBucket.tryConsumeAndReturnRemaining(cost); // 유저 버킷에서 cost만큼 토큰 소모
+
+                if (!userProbe.isConsumed()) {
+                    return handleRateLimitExceeded(response, userProbe.getNanosToWaitForRefill(), clientIp); // 단순 429 반환 (위반 카운트 증가 없음)
+                }
+                response.addHeader("X-Rate-Limit-User-Remaining", String.valueOf(userProbe.getRemainingTokens()));
+            }
+
             response.addHeader("X-Rate-Limit-Ip-Remaining", String.valueOf(ipProbe.getRemainingTokens()));
             return true;
         } else {
-            // 6. IP Bucket 초과 시 위반 횟수 증가 및 차단
+            // 위반 누적 → 50회 초과 시 다음 요청부터 페널티 (버킷 100→10)
             rateLimiterService.incrementViolationCount(clientIp);
-            return handleRateLimitExceeded(response, ipProbe.getNanosToWaitForRefill(), clientIp);
+            return handleRateLimitExceeded(response, ipProbe.getNanosToWaitForRefill(), clientIp); // 429 반환
         }
     }
 
-    // 초과 시 429 Too Many Requests 반환
     private boolean handleRateLimitExceeded(HttpServletResponse response, long nanosToWait, String key) throws IOException {
         long waitForRefill = nanosToWait / 1_000_000_000;
         response.addHeader("X-Rate-Limit-Retry-After-Seconds", String.valueOf(waitForRefill));
@@ -79,40 +77,40 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         String method = request.getMethod().toUpperCase();
         String uri = request.getRequestURI();
 
-        // 세션 시작: 무거운 작업 (비용 10)
-        if (uri.equals("/api/v1/sessions/start")) {
-            return 10;
+        if (SESSION_START_URI.equals(uri)) {
+            return SESSION_START_COST;
         }
-        
-        // CUD: 비용 5, GET: 비용 1
+
         return switch (method) {
-            case "GET" -> 1; 
-            case "POST", "PUT", "DELETE" -> 5;
-            default -> 1;
+            case "POST", "PUT", "DELETE" -> WRITE_OPERATION_COST;
+            default -> READ_OPERATION_COST;
         };
     }
 
     private String getUserId(HttpServletRequest request) {
         Principal principal = request.getUserPrincipal();
-        if (principal instanceof UsernamePasswordAuthenticationToken token && 
+        if (principal instanceof UsernamePasswordAuthenticationToken token &&
             token.getPrincipal() instanceof CustomUserDetails userDetails) {
             return String.valueOf(userDetails.getUserId());
         }
         return null;
     }
 
-    // 클라이언트 실제 IP 추출
+    // 프록시 환경에서 실제 클라이언트 IP 추출
     private String getClientIp(HttpServletRequest request) {
         String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
+        if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+            // X-Forwarded-For는 "client, proxy1, proxy2" 형태일 수 있음 → 첫 번째가 실제 IP
+            return ip.split(",")[0].trim();
         }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
+        ip = request.getHeader("Proxy-Client-IP");
+        if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+            return ip;
         }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
+        ip = request.getHeader("WL-Proxy-Client-IP");
+        if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+            return ip;
         }
-        return ip;
+        return request.getRemoteAddr();
     }
 }

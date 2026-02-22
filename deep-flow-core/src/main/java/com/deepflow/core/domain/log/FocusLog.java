@@ -3,11 +3,9 @@ package com.deepflow.core.domain.log;
 import com.deepflow.core.domain.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import com.deepflow.core.converter.JsonConverter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Getter
 @Entity
@@ -21,28 +19,32 @@ public class FocusLog extends BaseTimeEntity {
     private Long id;
 
     @Lob
-    @Convert(converter = JsonConverter.class)
     @Column(columnDefinition = "LONGTEXT")
-    private Map<String, Object> content;
+    private String content;
 
     private String title;
-    
+
     private String summary;
 
-
+    private String aiSummary;
 
     @Builder.Default
     @OneToMany(mappedBy = "focusLog", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FocusLogImage> images = new ArrayList<>();
 
-    public void update(String title, Map<String, Object> content, String summary, List<String> imageUrls) {
+    public void update(String title, String content, String summary, List<String> imageUrls) {
         this.title = title;
         this.content = content;
         this.summary = summary;
-        
+
         updateImages(imageUrls);
     }
 
+    public void updateAiSummary(String aiSummary) {
+        this.aiSummary = aiSummary;
+    }
+
+    // 기존 이미지를 모두 교체 (orphanRemoval에 의해 기존 이미지 자동 삭제)
     private void updateImages(List<String> newImageUrls) {
         this.images.clear();
 

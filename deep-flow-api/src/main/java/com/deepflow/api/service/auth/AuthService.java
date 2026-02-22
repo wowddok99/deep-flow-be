@@ -29,7 +29,7 @@ public class AuthService {
 
         User user = User.builder()
                 .username(request.username())
-                .password(passwordEncoder.encode(request.password()))
+                .password(passwordEncoder.encode(request.password())) // 비밀번호 암호화
                 .name(request.name())
                 .role(Role.USER)
                 .build();
@@ -39,13 +39,16 @@ public class AuthService {
 
     @Transactional
     public TokenResponse login(LoginRequest request) {
+        // 유저 조회
         User user = userRepository.findByUsername(request.username())
                 .orElseThrow(InvalidCredentialsException::new);
 
+        // 비밀번호 검증
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new InvalidCredentialsException();
         }
 
+        // JWT 토큰 생성
         String accessToken = jwtProvider.createAccessToken(user.getUsername(), user.getRole().name(), user.getId());
         String refreshToken = jwtProvider.createRefreshToken(user.getUsername());
 
@@ -57,19 +60,24 @@ public class AuthService {
 
     @Transactional
     public TokenResponse reissue(String refreshToken) {
+        // 서명 및 만료 여부 검증
         if (!jwtProvider.validateToken(refreshToken)) {
             throw new InvalidTokenException();
         }
 
         String username = jwtProvider.getUsername(refreshToken);
+
+        // 사용자 조회, 존재하지 않으면 인증 실패 처리
         User user = userRepository.findByUsername(username)
                 .orElseThrow(InvalidTokenException::new);
 
-        // 저장된 토큰과 요청된 토큰이 일치하는지 확인
+        // DB에 저장된 refresh 토큰과 일치하는지 확인
+        // 이미 교체된 토큰이면 거부하여 탈취 재사용 방지
         if (!refreshToken.equals(user.getRefreshToken())) {
             throw new InvalidTokenException();
         }
 
+        // 새로운 access/refresh 토큰 생성
         String newAccessToken = jwtProvider.createAccessToken(user.getUsername(), user.getRole().name(), user.getId());
         String newRefreshToken = jwtProvider.createRefreshToken(user.getUsername());
 

@@ -1,0 +1,30 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+jwt:
+  secret: ZnJvbV9kZWVwX2Zsb3dfYXBwbGljYXRpb25fYmFja2VuZF9zZWNyZXRfa2V5XzEyMzQ1Njc4OTAxMjM0NTY3ODkw
+  access-token-validity-in-seconds: 3600
+  refresh-token-validity-in-seconds: 604800
+
+app:
+  cors:
+    allowed-origins: http://localhost:3000
+  auth:
+    cookie:
+      secure: false
+      same-site: Lax
+      max-age: 604800
+  ai:
+    enabled: false
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.testcontainers: info
