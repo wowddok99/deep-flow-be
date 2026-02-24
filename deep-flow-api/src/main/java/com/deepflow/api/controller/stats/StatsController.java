@@ -5,7 +5,7 @@ import com.deepflow.api.dto.DailyStatsResponse;
 import com.deepflow.api.dto.StatsOverviewResponse;
 import com.deepflow.api.security.CustomUserDetails;
 import com.deepflow.application.stats.DailyFocusStatsService;
-import com.deepflow.domain.stats.DailyFocusStats;
+import com.deepflow.application.stats.dto.DailyStatsInfo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -53,9 +53,9 @@ public class StatsController {
     public ResponseEntity<CommonResponse<List<DailyStatsResponse>>> getWeeklyStats(
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        List<DailyFocusStats> stats = dailyFocusStatsService.getWeeklyStats(userDetails.getUserId());
+        List<DailyStatsInfo> stats = dailyFocusStatsService.getWeeklyStats(userDetails.getUserId());
         List<DailyStatsResponse> response = stats.stream()
-                .map(s -> new DailyStatsResponse(s.getDate(), s.getTotalSessions(), s.getTotalDurationSeconds()))
+                .map(DailyStatsResponse::from)
                 .toList();
         return ResponseEntity.ok(CommonResponse.ok(response));
     }

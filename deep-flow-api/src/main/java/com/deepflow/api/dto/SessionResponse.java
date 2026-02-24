@@ -1,6 +1,6 @@
 package com.deepflow.api.dto;
 
-import com.deepflow.domain.session.SessionStatus;
+import com.deepflow.application.session.dto.SessionInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
@@ -15,6 +15,9 @@ public record SessionResponse(
     @Schema(description = "Session start time", example = "2025-01-15T10:30:00")
     LocalDateTime startTime,
     @Schema(description = "Session status", example = "ONGOING")
-    SessionStatus status
+    String status
 ) {
+    public static SessionResponse from(SessionInfo info) {
+        return new SessionResponse(info.id(), info.startTime(), info.status());
+    }
 }
