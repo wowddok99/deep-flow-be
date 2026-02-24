@@ -1,6 +1,6 @@
 package com.deepflow.api.dto;
 
-import com.deepflow.domain.session.SessionStatus;
+import com.deepflow.application.session.dto.SessionSummaryInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 
@@ -18,10 +18,17 @@ public record SessionSummaryResponse(
     @Schema(description = "Duration in seconds", example = "5400")
     Long durationSeconds,
     @Schema(description = "Session status", example = "COMPLETED")
-    SessionStatus status,
+    String status,
     @Schema(description = "Log title", example = "Spring Boot study")
     String title,
     @Schema(description = "Log summary", example = "Studied JPA and Spring Security")
     String summary
 ) {
+    public static SessionSummaryResponse from(SessionSummaryInfo info) {
+        return new SessionSummaryResponse(
+            info.id(), info.startTime(), info.endTime(),
+            info.durationSeconds(), info.status(),
+            info.title(), info.summary()
+        );
+    }
 }

@@ -1,5 +1,6 @@
 package com.deepflow.application.stats;
 
+import com.deepflow.application.stats.dto.DailyStatsInfo;
 import com.deepflow.domain.stats.DailyFocusStats;
 import com.deepflow.domain.stats.DailyFocusStatsRepository;
 import lombok.RequiredArgsConstructor;
@@ -57,12 +58,15 @@ public class DailyFocusStatsService {
         return new StatsOverview(todaySessions, todayDuration, weekSessions, weekDuration);
     }
 
-    public List<DailyFocusStats> getWeeklyStats(Long userId) {
+    public List<DailyStatsInfo> getWeeklyStats(Long userId) {
         LocalDate today = LocalDate.now();
         LocalDate weekStart = today.minusDays(6);
 
         return dailyFocusStatsRepository
-                .findByUserIdAndDateBetweenOrderByDateAsc(userId, weekStart, today);
+                .findByUserIdAndDateBetweenOrderByDateAsc(userId, weekStart, today)
+                .stream()
+                .map(DailyStatsInfo::from)
+                .toList();
     }
 
     public record StatsOverview(int todaySessions, long todayDurationSeconds,

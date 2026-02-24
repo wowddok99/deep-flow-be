@@ -1,5 +1,6 @@
 package com.deepflow.api.dto;
 
+import com.deepflow.application.stats.dto.DailyStatsInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
@@ -13,4 +14,7 @@ public record DailyStatsResponse(
         @Schema(description = "Total focus duration in seconds", example = "5400")
         long totalDurationSeconds
 ) {
+    public static DailyStatsResponse from(DailyStatsInfo info) {
+        return new DailyStatsResponse(info.date(), info.totalSessions(), info.totalDurationSeconds());
+    }
 }
