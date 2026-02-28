@@ -15,6 +15,8 @@ import com.deepflow.domain.session.event.SessionStoppedEvent;
 import com.deepflow.domain.user.User;
 import com.deepflow.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
@@ -65,18 +67,21 @@ public class SessionService {
         return new SliceResult<>(content, nextCursorId, slice.hasNext());
     }
 
+    @Cacheable(value = "sessions", key = "#id")
     public SessionDetailInfo getSessionDetail(Long userId, Long id) {
         FocusSession session = sessionRepository.findByIdAndUserIdWithLogAndImages(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + id));
         return SessionDetailInfo.from(session);
     }
 
+    @CacheEvict(value = "sessions", key = "#id")
     @Transactional
     public void updateLog(Long userId, Long id, String title, String content, String summary, List<String> imageUrls) {
         FocusSession session = getOwnedSession(id, userId);
         session.getFocusLog().update(title, content, summary, imageUrls);
     }
 
+    @CacheEvict(value = "sessions", key = "#id")
     @Transactional
     public void stopSession(Long userId, Long id) {
         FocusSession session = getOwnedSession(id, userId);
@@ -88,6 +93,7 @@ public class SessionService {
                 session.getDurationSeconds()));
     }
 
+    @CacheEvict(value = "sessions", key = "#id")
     @Transactional
     public void deleteSession(Long userId, Long id) {
         FocusSession session = getOwnedSession(id, userId);

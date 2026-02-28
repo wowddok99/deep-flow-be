@@ -35,6 +35,9 @@ dependencies {
     // AOP
     api("org.springframework.boot:spring-boot-starter-aop")
 
+    // Security (PasswordEncoder)
+    implementation("org.springframework.security:spring-security-crypto")
+
     // DB
     runtimeOnly("com.mysql:mysql-connector-j")
 

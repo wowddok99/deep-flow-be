@@ -11,6 +11,9 @@ spring:
       hibernate:
         show_sql: true
 
+jwt:
+  secret: ZnJvbV9kZWVwX2Zsb3dfYXBwbGljYXRpb25fYmFja2VuZF9zZWNyZXRfa2V5XzEyMzQ1Njc4OTAxMjM0NTY3ODkw
+
 app:
   cors:
     allowed-origins: http://localhost:3000

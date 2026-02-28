@@ -23,7 +23,7 @@ springdoc:
     path: /swagger-ui.html
 
 jwt:
-  secret: ${JWT_SECRET:ZnJvbV9kZWVwX2Zsb3dfYXBwbGljYXRpb25fYmFja2VuZF9zZWNyZXRfa2V5XzEyMzQ1Njc4OTAxMjM0NTY3ODkw}
+  secret: ${JWT_SECRET}
   access-token-validity-in-seconds: 3600
   refresh-token-validity-in-seconds: 604800
 
