@@ -1,6 +1,7 @@
 package com.deepflow.api.controller.session;
 
 import com.deepflow.api.dto.*;
+import com.deepflow.api.mapper.SessionResponseMapper;
 import com.deepflow.api.security.CustomUserDetails;
 import com.deepflow.application.common.SliceResult;
 import com.deepflow.application.session.SessionService;
@@ -32,6 +33,7 @@ import java.util.List;
 public class SessionController {
 
     private final SessionService sessionService;
+    private final SessionResponseMapper sessionResponseMapper;
 
     @Operation(summary = "Start Focus Session")
     @ApiResponses({
@@ -78,7 +80,7 @@ public class SessionController {
             @Parameter(description = "Session ID") @PathVariable @Min(1) Long id
     ) {
         SessionDetailInfo info = sessionService.getSessionDetail(userDetails.getUserId(), id);
-        return ResponseEntity.ok(CommonResponse.ok(SessionDetailResponse.from(info)));
+        return ResponseEntity.ok(CommonResponse.ok(sessionResponseMapper.toDetailResponse(info)));
     }
 
     @Operation(summary = "Update Session Log")
