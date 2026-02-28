@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import com.deepflow.api.security.CustomUserDetails;
@@ -20,9 +21,15 @@ import java.security.Principal;
 @RequiredArgsConstructor
 public class RateLimitInterceptor implements HandlerInterceptor {
 
-    private static final long SESSION_START_COST = 10;
-    private static final long WRITE_OPERATION_COST = 5;
-    private static final long READ_OPERATION_COST = 1;
+    @Value("${app.rate-limit.session-start-cost:10}")
+    private long sessionStartCost;
+
+    @Value("${app.rate-limit.write-operation-cost:5}")
+    private long writeOperationCost;
+
+    @Value("${app.rate-limit.read-operation-cost:1}")
+    private long readOperationCost;
+
     private static final String SESSION_START_URI = "/api/v1/sessions/start";
 
     private final RateLimiterService rateLimiterService;
@@ -81,12 +88,12 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         String uri = request.getRequestURI();
 
         if (SESSION_START_URI.equals(uri)) {
-            return SESSION_START_COST;
+            return sessionStartCost;
         }
 
         return switch (method) {
-            case "POST", "PUT", "DELETE" -> WRITE_OPERATION_COST;
-            default -> READ_OPERATION_COST;
+            case "POST", "PUT", "DELETE" -> writeOperationCost;
+            default -> readOperationCost;
         };
     }
 

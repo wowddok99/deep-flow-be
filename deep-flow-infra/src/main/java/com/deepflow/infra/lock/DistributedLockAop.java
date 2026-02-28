@@ -1,5 +1,6 @@
 package com.deepflow.infra.lock;
 
+import com.deepflow.application.exception.lock.LockAcquisitionException;
 import com.deepflow.application.lock.DistributedLock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,11 +39,11 @@ public class DistributedLockAop {
 
         try {
             boolean available = rLock.tryLock(
-                    distributedLock.waitTime(), distributedLock.leaseTime(), distributedLock.timeUnit());
+                    distributedLock.waitTime(), distributedLock.timeUnit());
 
             if (!available) {
                 log.warn("분산락 획득 실패: key={}", key);
-                throw new IllegalStateException("Failed to acquire lock: " + key);
+                throw new LockAcquisitionException();
             }
 
             return aopForTransaction.proceed(joinPoint);
