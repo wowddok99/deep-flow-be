@@ -10,9 +10,9 @@ import lombok.Builder;
 public record SignUpRequest(
         @Schema(description = "Username (6-20 chars)", example = "testuser")
         @NotBlank @Size(min = 6, max = 20, message = "Username must be between 6 and 20 characters") String username,
-        @Schema(description = "Password", example = "password123")
-        @NotBlank String password,
-        @Schema(description = "Display name", example = "Test User")
-        @NotBlank String name
+        @Schema(description = "Password (8-72 chars)", example = "password123")
+        @NotBlank @Size(min = 8, max = 72, message = "Password must be between 8 and 72 characters") String password,
+        @Schema(description = "Display name (2-20 chars)", example = "Test User")
+        @NotBlank @Size(min = 2, max = 20, message = "Name must be between 2 and 20 characters") String name
 ) {
 }

@@ -13,15 +13,19 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @Tag(name = "Focus Session", description = "Focus Session & Logging API")
+@Validated
 @RestController
 @RequestMapping("/api/v1/sessions")
 @RequiredArgsConstructor
@@ -50,8 +54,8 @@ public class SessionController {
     @GetMapping
     public ResponseEntity<CommonResponse<CursorResponse<SessionSummaryResponse>>> getAllSessions(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Parameter(description = "Cursor ID for pagination") @RequestParam(required = false) Long cursorId,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size
+            @Parameter(description = "Cursor ID for pagination") @RequestParam(required = false) @Min(1) Long cursorId,
+            @Parameter(description = "Page size (1-50)") @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size
     ) {
         SliceResult<SessionSummaryInfo> result = sessionService.getAllSessions(userDetails.getUserId(), cursorId, size);
 
@@ -71,7 +75,7 @@ public class SessionController {
     @GetMapping("/{id}")
     public ResponseEntity<CommonResponse<SessionDetailResponse>> getSession(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Parameter(description = "Session ID") @PathVariable Long id
+            @Parameter(description = "Session ID") @PathVariable @Min(1) Long id
     ) {
         SessionDetailInfo info = sessionService.getSessionDetail(userDetails.getUserId(), id);
         return ResponseEntity.ok(CommonResponse.ok(SessionDetailResponse.from(info)));
@@ -85,7 +89,7 @@ public class SessionController {
     @PutMapping("/{id}/log")
     public ResponseEntity<CommonResponse<Void>> updateLog(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Parameter(description = "Session ID") @PathVariable Long id,
+            @Parameter(description = "Session ID") @PathVariable @Min(1) Long id,
             @RequestBody @Valid LogUpdateRequest request
     ) {
         String contentStr = request.content() != null ? request.content().toString() : null;
@@ -101,7 +105,7 @@ public class SessionController {
     @PostMapping("/{id}/stop")
     public ResponseEntity<CommonResponse<Void>> stopSession(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Parameter(description = "Session ID") @PathVariable Long id
+            @Parameter(description = "Session ID") @PathVariable @Min(1) Long id
     ) {
         sessionService.stopSession(userDetails.getUserId(), id);
         return ResponseEntity.ok(CommonResponse.ok());
@@ -116,7 +120,7 @@ public class SessionController {
     @DeleteMapping("/{id}")
     public ResponseEntity<CommonResponse<Void>> deleteSession(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Parameter(description = "Session ID") @PathVariable Long id
+            @Parameter(description = "Session ID") @PathVariable @Min(1) Long id
     ) {
         sessionService.deleteSession(userDetails.getUserId(), id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
