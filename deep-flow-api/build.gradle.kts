@@ -1,5 +1,5 @@
-tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
-    enabled = true
+plugins {
+    id("org.springframework.boot")
 }
 
 dependencies {
