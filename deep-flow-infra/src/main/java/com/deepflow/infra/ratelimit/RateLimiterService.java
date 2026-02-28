@@ -6,6 +6,7 @@ import io.github.bucket4j.BucketConfiguration;
 import io.github.bucket4j.distributed.ExpirationAfterWriteStrategy;
 import io.github.bucket4j.redis.redisson.cas.RedissonBasedProxyManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.redisson.Redisson;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RedissonClient;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RateLimiterService {
@@ -52,6 +54,11 @@ public class RateLimiterService {
         if (count == 1) {
             atomicLong.expire(Duration.ofMinutes(1));
         }
+
+        if (count == PENALTY_THRESHOLD + 1) {
+            log.warn("페널티 박스 진입: key={}, violations={}", key, count);
+        }
+
         return count;
     }
 

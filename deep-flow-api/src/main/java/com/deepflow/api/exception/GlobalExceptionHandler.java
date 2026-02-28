@@ -21,6 +21,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<CommonResponse<Void>> handleCustomException(CustomException e) {
         ErrorCode errorCode = e.getErrorCode();
+        log.warn("비즈니스 예외: code={}, message={}", errorCode.name(), e.getMessage());
         return ResponseEntity
                 .status(errorCode.getStatus())
                 .body(CommonResponse.error(new ApiError(errorCode.name(), e.getMessage())));
@@ -31,6 +32,7 @@ public class GlobalExceptionHandler {
         String message = e.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining(", "));
+        log.warn("입력 검증 실패: {}", message);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(CommonResponse.error(new ApiError("VALIDATION_ERROR", message)));
@@ -41,6 +43,7 @@ public class GlobalExceptionHandler {
         String message = e.getConstraintViolations().stream()
                 .map(v -> v.getPropertyPath() + ": " + v.getMessage())
                 .collect(Collectors.joining(", "));
+        log.warn("파라미터 검증 실패: {}", message);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(CommonResponse.error(new ApiError("VALIDATION_ERROR", message)));

@@ -15,6 +15,7 @@ import com.deepflow.domain.session.event.SessionStoppedEvent;
 import com.deepflow.domain.user.User;
 import com.deepflow.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -46,7 +48,9 @@ public class SessionService {
         }
 
         FocusSession session = FocusSession.create(LocalDateTime.now(), user);
-        return SessionInfo.from(sessionRepository.save(session));
+        SessionInfo info = SessionInfo.from(sessionRepository.save(session));
+        log.info("세션 시작: sessionId={}, userId={}", info.id(), userId);
+        return info;
     }
 
     public SliceResult<SessionSummaryInfo> getAllSessions(Long userId, Long cursorId, int size) {
@@ -79,6 +83,7 @@ public class SessionService {
     public void updateLog(Long userId, Long id, String title, String content, String summary, List<String> imageUrls) {
         FocusSession session = getOwnedSession(id, userId);
         session.getFocusLog().update(title, content, summary, imageUrls);
+        log.debug("로그 수정: sessionId={}, userId={}", id, userId);
     }
 
     @CacheEvict(value = "sessions", key = "#id")
@@ -86,6 +91,7 @@ public class SessionService {
     public void stopSession(Long userId, Long id) {
         FocusSession session = getOwnedSession(id, userId);
         session.stop(LocalDateTime.now());
+        log.info("세션 종료: sessionId={}, userId={}, duration={}s", id, userId, session.getDurationSeconds());
 
         eventPublisher.publishEvent(new SessionStoppedEvent(
                 session.getId(),
@@ -103,6 +109,7 @@ public class SessionService {
         }
 
         session.softDelete();
+        log.info("세션 삭제: sessionId={}, userId={}", id, userId);
     }
 
     private FocusSession getOwnedSession(Long sessionId, Long userId) {

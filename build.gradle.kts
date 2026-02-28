@@ -35,6 +35,10 @@ subprojects {
         testImplementation("org.springframework.boot:spring-boot-starter-test")
     }
 
+    tasks.withType<JavaCompile> {
+        options.encoding = "UTF-8"
+    }
+
     tasks.withType<Test> {
         useJUnitPlatform()
     }

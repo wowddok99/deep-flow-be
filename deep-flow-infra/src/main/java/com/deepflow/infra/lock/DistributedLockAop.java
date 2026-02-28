@@ -41,11 +41,13 @@ public class DistributedLockAop {
                     distributedLock.waitTime(), distributedLock.leaseTime(), distributedLock.timeUnit());
 
             if (!available) {
+                log.warn("분산락 획득 실패: key={}", key);
                 throw new IllegalStateException("Failed to acquire lock: " + key);
             }
 
             return aopForTransaction.proceed(joinPoint);
         } catch (InterruptedException e) {
+            log.warn("분산락 대기 중 인터럽트: key={}", key);
             throw new InterruptedException();
         } finally {
             try {

@@ -38,6 +38,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
         boolean isPenalty = rateLimiterService.isInPenaltyBox(clientIp);
         if (isPenalty) {
+            log.warn("페널티 박스 적용 중: IP={}", clientIp);
             response.addHeader("X-Rate-Limit-Penalty", "true");
         }
 
@@ -52,6 +53,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
                 ConsumptionProbe userProbe = userBucket.tryConsumeAndReturnRemaining(cost); // 유저 버킷에서 cost만큼 토큰 소모
 
                 if (!userProbe.isConsumed()) {
+                    log.warn("Rate limit 초과 (유저): IP={}, userId={}, URI={}", clientIp, userId, request.getRequestURI());
                     return handleRateLimitExceeded(response, userProbe.getNanosToWaitForRefill(), clientIp); // 단순 429 반환 (위반 카운트 증가 없음)
                 }
                 response.addHeader("X-Rate-Limit-User-Remaining", String.valueOf(userProbe.getRemainingTokens()));
@@ -62,6 +64,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         } else {
             // 위반 누적 → 50회 초과 시 다음 요청부터 페널티 (버킷 100→10)
             rateLimiterService.incrementViolationCount(clientIp);
+            log.warn("Rate limit 초과 (위반 누적): IP={}, userId={}, URI={}", clientIp, userId, request.getRequestURI());
             return handleRateLimitExceeded(response, ipProbe.getNanosToWaitForRefill(), clientIp); // 429 반환
         }
     }
