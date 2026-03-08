@@ -43,6 +43,7 @@ app:
     queue-capacity: 50
   cache:
     ttl-minutes: 60
+    version: v1
   rate-limit:
     normal-rate-limit: 100
     penalty-rate-limit: 10

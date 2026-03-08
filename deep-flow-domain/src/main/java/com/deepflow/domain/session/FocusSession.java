@@ -62,12 +62,23 @@ public class FocusSession extends BaseTimeEntity {
     }
 
     public void stop(LocalDateTime endTime) {
+        if (this.status != SessionStatus.ONGOING) {
+            throw new IllegalStateException("진행 중인 세션만 종료할 수 있습니다. 현재 상태: " + this.status);
+        }
+        if (endTime.isBefore(this.startTime)) {
+            throw new IllegalArgumentException("종료 시간은 시작 시간 이후여야 합니다.");
+        }
+
         this.endTime = endTime;
         this.status = SessionStatus.COMPLETED;
         this.durationSeconds = Duration.between(startTime, endTime).getSeconds();
     }
 
     public void softDelete() {
+        if (this.deletedAt != null) {
+            throw new IllegalStateException("이미 삭제된 세션입니다.");
+        }
+
         this.deletedAt = LocalDateTime.now();
     }
 }

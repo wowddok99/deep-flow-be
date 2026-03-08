@@ -5,7 +5,6 @@ import io.github.bucket4j.Bucket;
 import io.github.bucket4j.BucketConfiguration;
 import io.github.bucket4j.distributed.ExpirationAfterWriteStrategy;
 import io.github.bucket4j.redis.redisson.cas.RedissonBasedProxyManager;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.Redisson;
 import org.redisson.api.RAtomicLong;
@@ -18,9 +17,9 @@ import java.time.Duration;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class RateLimiterService {
 
+    private final RedissonBasedProxyManager proxyManager;
     private final RedissonClient redissonClient;
 
     private static final String VIOLATION_KEY_PREFIX = "rate_limit:violation:";
@@ -34,23 +33,25 @@ public class RateLimiterService {
     @Value("${app.rate-limit.penalty-threshold:50}")
     private long penaltyThreshold;
 
-    @Value("${app.rate-limit.bucket-expiry-minutes:10}")
-    private long bucketExpiryMinutes;
-
     @Value("${app.rate-limit.refill-period-minutes:1}")
     private long refillPeriodMinutes;
 
     @Value("${app.rate-limit.violation-expiry-minutes:1}")
     private long violationExpiryMinutes;
 
-    public Bucket resolveBucket(String key, boolean isPenalty) {
-        CommandAsyncExecutor commandExecutor = ((Redisson) redissonClient).getCommandExecutor();
+    public RateLimiterService(
+            RedissonClient redissonClient,
+            @Value("${app.rate-limit.bucket-expiry-minutes:10}") long bucketExpiryMinutes) {
+        this.redissonClient = redissonClient;
 
-        RedissonBasedProxyManager proxyManager = RedissonBasedProxyManager.builderFor(commandExecutor)
+        CommandAsyncExecutor commandExecutor = ((Redisson) redissonClient).getCommandExecutor();
+        this.proxyManager = RedissonBasedProxyManager.builderFor(commandExecutor)
                 .withExpirationStrategy(ExpirationAfterWriteStrategy
                         .basedOnTimeForRefillingBucketUpToMax(Duration.ofMinutes(bucketExpiryMinutes)))
                 .build();
+    }
 
+    public Bucket resolveBucket(String key, boolean isPenalty) {
         int limit = isPenalty ? penaltyRateLimit : normalRateLimit;
         BucketConfiguration configuration = BucketConfiguration.builder()
                 .addLimit(Bandwidth.builder()

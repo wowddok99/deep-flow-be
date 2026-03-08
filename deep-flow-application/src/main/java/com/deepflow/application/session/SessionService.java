@@ -71,7 +71,7 @@ public class SessionService {
         return new SliceResult<>(content, nextCursorId, slice.hasNext());
     }
 
-    @Cacheable(value = "sessions", key = "#id")
+    @Cacheable(value = "sessions", key = "#id", sync = true)
     public SessionDetailInfo getSessionDetail(Long userId, Long id) {
         FocusSession session = sessionRepository.findByIdAndUserIdWithLogAndImages(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + id));
