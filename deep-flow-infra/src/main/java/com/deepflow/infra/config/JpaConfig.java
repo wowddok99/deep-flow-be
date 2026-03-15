@@ -8,6 +8,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @Configuration
 @EnableJpaAuditing
 @EntityScan(basePackages = "com.deepflow.domain")
-@EnableJpaRepositories(basePackages = "com.deepflow.domain")
+@EnableJpaRepositories(basePackages = "com.deepflow.infra.persistence")
 public class JpaConfig {
 }

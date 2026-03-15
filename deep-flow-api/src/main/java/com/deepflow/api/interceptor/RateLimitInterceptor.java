@@ -1,6 +1,6 @@
 package com.deepflow.api.interceptor;
 
-import com.deepflow.infra.ratelimit.RateLimiterService;
+import com.deepflow.application.port.out.ratelimit.RateLimiter;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,7 +32,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
     private static final String SESSION_START_URI = "/api/v1/sessions/start";
 
-    private final RateLimiterService rateLimiterService;
+    private final RateLimiter rateLimiter;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -43,20 +43,20 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         String userKey = userId != null ? "rate_limit:user:" + userId : null;
         long cost = calculateCost(request);
 
-        boolean isPenalty = rateLimiterService.isInPenaltyBox(clientIp);
+        boolean isPenalty = rateLimiter.isInPenaltyBox(clientIp);
         if (isPenalty) {
             log.warn("페널티 박스 적용 중: IP={}", clientIp);
             response.addHeader("X-Rate-Limit-Penalty", "true");
         }
 
         // IP 기반 1차 검증
-        Bucket ipBucket = rateLimiterService.resolveBucket(ipKey, isPenalty);
+        Bucket ipBucket = rateLimiter.resolveBucket(ipKey, isPenalty);
         ConsumptionProbe ipProbe = ipBucket.tryConsumeAndReturnRemaining(cost); // IP 버킷에서 cost만큼 토큰 소모
 
         if (ipProbe.isConsumed()) {
             // IP 통과 시, 로그인 유저는 User Bucket으로 2차 검증
             if (userKey != null) {
-                Bucket userBucket = rateLimiterService.resolveBucket(userKey, false);
+                Bucket userBucket = rateLimiter.resolveBucket(userKey, false);
                 ConsumptionProbe userProbe = userBucket.tryConsumeAndReturnRemaining(cost); // 유저 버킷에서 cost만큼 토큰 소모
 
                 if (!userProbe.isConsumed()) {
@@ -70,7 +70,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
             return true;
         } else {
             // 위반 누적 → 50회 초과 시 다음 요청부터 페널티 (버킷 100→10)
-            rateLimiterService.incrementViolationCount(clientIp);
+            rateLimiter.incrementViolationCount(clientIp);
             log.warn("Rate limit 초과 (위반 누적): IP={}, userId={}, URI={}", clientIp, userId, request.getRequestURI());
             return handleRateLimitExceeded(response, ipProbe.getNanosToWaitForRefill(), clientIp); // 429 반환
         }

@@ -6,6 +6,9 @@ dependencies {
     implementation(project(":deep-flow-domain"))
     implementation(project(":deep-flow-application"))
 
+    // JPA (domain에서 분리됨 → infra에서 직접 관리)
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+
     // Redis
     api("org.springframework.boot:spring-boot-starter-data-redis")
 

@@ -1,5 +1,6 @@
 package com.deepflow.infra.ratelimit;
 
+import com.deepflow.application.port.out.ratelimit.RateLimiter;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.BucketConfiguration;
@@ -17,7 +18,7 @@ import java.time.Duration;
 
 @Slf4j
 @Service
-public class RateLimiterService {
+public class RateLimiterService implements RateLimiter {
 
     private final RedissonBasedProxyManager proxyManager;
     private final RedissonClient redissonClient;

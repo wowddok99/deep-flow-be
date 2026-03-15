@@ -1,6 +1,6 @@
 package com.deepflow.api.security;
 
-import com.deepflow.application.auth.port.TokenProvider;
+import com.deepflow.application.port.out.auth.TokenProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

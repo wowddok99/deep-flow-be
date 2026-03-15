@@ -1,8 +1,8 @@
 package com.deepflow.application.stats;
 
+import com.deepflow.application.port.out.persistence.StatsRepository;
 import com.deepflow.application.stats.dto.DailyStatsInfo;
 import com.deepflow.domain.stats.DailyFocusStats;
-import com.deepflow.domain.stats.DailyFocusStatsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,14 +18,14 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class DailyFocusStatsService {
 
-    private final DailyFocusStatsRepository dailyFocusStatsRepository;
+    private final StatsRepository statsRepository;
 
     @Transactional
     public void upsertStats(Long userId, long durationSeconds) {
         LocalDate today = LocalDate.now();
 
         Optional<DailyFocusStats> existingStats =
-                dailyFocusStatsRepository.findByUserIdAndDate(userId, today);
+                statsRepository.findByUserIdAndDate(userId, today);
 
         if (existingStats.isPresent()) {
             existingStats.get().addSession(durationSeconds);
@@ -36,7 +36,7 @@ public class DailyFocusStatsService {
                     .totalSessions(1)
                     .totalDurationSeconds(durationSeconds)
                     .build();
-            dailyFocusStatsRepository.save(stats);
+            statsRepository.save(stats);
         }
 
         log.info("Updated daily stats for user {} on {}", userId, today);
@@ -46,14 +46,14 @@ public class DailyFocusStatsService {
         LocalDate today = LocalDate.now();
         LocalDate weekStart = today.minusDays(6);
 
-        DailyFocusStats todayStats = dailyFocusStatsRepository.findByUserIdAndDate(userId, today)
+        DailyFocusStats todayStats = statsRepository.findByUserIdAndDate(userId, today)
                 .orElse(null);
 
         int todaySessions = todayStats != null ? todayStats.getTotalSessions() : 0;
         long todayDuration = todayStats != null ? todayStats.getTotalDurationSeconds() : 0;
 
-        int weekSessions = dailyFocusStatsRepository.sumSessionsByUserIdAndDateBetween(userId, weekStart, today);
-        long weekDuration = dailyFocusStatsRepository.sumDurationByUserIdAndDateBetween(userId, weekStart, today);
+        int weekSessions = statsRepository.sumSessionsByUserIdAndDateBetween(userId, weekStart, today);
+        long weekDuration = statsRepository.sumDurationByUserIdAndDateBetween(userId, weekStart, today);
 
         return new StatsOverview(todaySessions, todayDuration, weekSessions, weekDuration);
     }
@@ -62,8 +62,8 @@ public class DailyFocusStatsService {
         LocalDate today = LocalDate.now();
         LocalDate weekStart = today.minusDays(6);
 
-        return dailyFocusStatsRepository
-                .findByUserIdAndDateBetweenOrderByDateAsc(userId, weekStart, today)
+        return statsRepository
+                .findByUserIdAndDateBetween(userId, weekStart, today)
                 .stream()
                 .map(DailyStatsInfo::from)
                 .toList();

@@ -1,12 +1,12 @@
 package com.deepflow.application.auth;
 
-import com.deepflow.application.auth.port.TokenProvider;
 import com.deepflow.application.exception.auth.DuplicateUsernameException;
 import com.deepflow.application.exception.auth.InvalidCredentialsException;
 import com.deepflow.application.exception.auth.InvalidTokenException;
+import com.deepflow.application.port.out.auth.TokenProvider;
+import com.deepflow.application.port.out.persistence.UserRepository;
 import com.deepflow.domain.user.Role;
 import com.deepflow.domain.user.User;
-import com.deepflow.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;

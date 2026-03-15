@@ -1,6 +1,6 @@
 package com.deepflow.infra.security;
 
-import com.deepflow.application.auth.port.TokenProvider;
+import com.deepflow.application.port.out.auth.TokenProvider;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;

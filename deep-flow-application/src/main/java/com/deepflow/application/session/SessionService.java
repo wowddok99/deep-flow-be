@@ -5,22 +5,20 @@ import com.deepflow.application.exception.ResourceNotFoundException;
 import com.deepflow.application.exception.session.SessionAlreadyExistsException;
 import com.deepflow.application.exception.session.SessionNotDeletableException;
 import com.deepflow.application.lock.DistributedLock;
+import com.deepflow.application.port.out.persistence.SessionRepository;
+import com.deepflow.application.port.out.persistence.UserRepository;
 import com.deepflow.application.session.dto.SessionDetailInfo;
 import com.deepflow.application.session.dto.SessionInfo;
 import com.deepflow.application.session.dto.SessionSummaryInfo;
 import com.deepflow.domain.session.FocusSession;
-import com.deepflow.domain.session.FocusSessionRepository;
 import com.deepflow.domain.session.SessionStatus;
 import com.deepflow.domain.session.event.SessionStoppedEvent;
 import com.deepflow.domain.user.User;
-import com.deepflow.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +31,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class SessionService {
 
-    private final FocusSessionRepository sessionRepository;
+    private final SessionRepository sessionRepository;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -54,21 +52,13 @@ public class SessionService {
     }
 
     public SliceResult<SessionSummaryInfo> getAllSessions(Long userId, Long cursorId, int size) {
-        PageRequest pageRequest = PageRequest.of(0, size);
+        SliceResult<FocusSession> result = sessionRepository.findByUserIdWithLog(userId, cursorId, size);
 
-        Slice<FocusSession> slice = (cursorId == null)
-                ? sessionRepository.findAllByUserIdWithLog(userId, pageRequest)
-                : sessionRepository.findByUserIdAndIdLessThanWithLog(userId, cursorId, pageRequest);
-
-        List<SessionSummaryInfo> content = slice.getContent().stream()
+        List<SessionSummaryInfo> content = result.content().stream()
                 .map(SessionSummaryInfo::from)
                 .toList();
 
-        Long nextCursorId = slice.hasNext()
-                ? slice.getContent().get(slice.getContent().size() - 1).getId()
-                : null;
-
-        return new SliceResult<>(content, nextCursorId, slice.hasNext());
+        return new SliceResult<>(content, result.nextCursorId(), result.hasNext());
     }
 
     @Cacheable(value = "sessions", key = "#id", sync = true)

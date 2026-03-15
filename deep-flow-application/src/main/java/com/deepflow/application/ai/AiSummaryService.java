@@ -1,7 +1,8 @@
 package com.deepflow.application.ai;
 
+import com.deepflow.application.port.out.ai.AiClient;
+import com.deepflow.application.port.out.persistence.FocusLogRepository;
 import com.deepflow.domain.log.FocusLog;
-import com.deepflow.domain.log.FocusLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

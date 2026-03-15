@@ -1,5 +1,6 @@
-package com.deepflow.domain.stats;
+package com.deepflow.infra.persistence.stats;
 
+import com.deepflow.domain.stats.DailyFocusStats;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -8,7 +9,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-public interface DailyFocusStatsRepository extends JpaRepository<DailyFocusStats, Long> {
+interface StatsJpaRepository extends JpaRepository<DailyFocusStats, Long> {
+
     Optional<DailyFocusStats> findByUserIdAndDate(Long userId, LocalDate date);
 
     List<DailyFocusStats> findByUserIdAndDateBetweenOrderByDateAsc(Long userId, LocalDate from, LocalDate to);
