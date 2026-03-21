@@ -4,7 +4,9 @@ COPY gradlew .
 COPY gradle gradle
 COPY build.gradle.kts .
 COPY settings.gradle.kts .
-COPY deep-flow-core deep-flow-core
+COPY deep-flow-domain deep-flow-domain
+COPY deep-flow-application deep-flow-application
+COPY deep-flow-infra deep-flow-infra
 COPY deep-flow-api deep-flow-api
 RUN chmod +x gradlew
 RUN ./gradlew :deep-flow-api:bootJar -x test --no-daemon
