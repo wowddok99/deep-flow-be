@@ -1,5 +1,6 @@
 package com.deepflow.infra.lock;
 
+import com.deepflow.application.exception.CustomException;
 import com.deepflow.application.exception.lock.LockAcquisitionException;
 import com.deepflow.application.lock.DistributedLock;
 import lombok.RequiredArgsConstructor;
@@ -48,13 +49,21 @@ public class DistributedLockAop {
 
             return aopForTransaction.proceed(joinPoint);
         } catch (InterruptedException e) {
-            log.warn("분산락 대기 중 인터럽트: key={}", key);
-            throw new InterruptedException();
+            log.warn("분산락 대기 중 인터럽트: key={}, method={}", key, method.getName(), e);
+            Thread.currentThread().interrupt();
+            throw new LockAcquisitionException();
+        } catch (LockAcquisitionException e) {
+            throw e;
+        } catch (CustomException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("분산락 Redis 예외: key={}, method={}", key, method.getName(), e);
+            throw new LockAcquisitionException();
         } finally {
             try {
                 rLock.unlock();
             } catch (IllegalMonitorStateException e) {
-                log.info("Redisson Lock Already Unlocked: {} {}", method.getName(), key);
+                log.info("분산락 이미 해제됨: method={}, key={}", method.getName(), key);
             }
         }
     }

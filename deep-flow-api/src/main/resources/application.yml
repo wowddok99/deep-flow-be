@@ -6,6 +6,18 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      timeout: 1000ms
+
+  redis:
+    redisson:
+      config: |
+        singleServerConfig:
+          address: "redis://${REDIS_HOST:localhost}:${REDIS_PORT:6379}"
+          connectionMinimumIdleSize: 5
+          connectionPoolSize: 20
+          timeout: 1000
+          retryAttempts: 1
+          retryInterval: 500
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver

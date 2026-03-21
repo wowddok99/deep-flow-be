@@ -36,43 +36,47 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        String clientIp = getClientIp(request);
-        String userId = getUserId(request);
+        try {
+            String clientIp = getClientIp(request);
+            String userId = getUserId(request);
 
-        String ipKey = "rate_limit:ip:" + clientIp;
-        String userKey = userId != null ? "rate_limit:user:" + userId : null;
-        long cost = calculateCost(request);
+            String ipKey = "rate_limit:ip:" + clientIp;
+            String userKey = userId != null ? "rate_limit:user:" + userId : null;
+            long cost = calculateCost(request);
 
-        boolean isPenalty = rateLimiter.isInPenaltyBox(clientIp);
-        if (isPenalty) {
-            log.warn("페널티 박스 적용 중: IP={}", clientIp);
-            response.addHeader("X-Rate-Limit-Penalty", "true");
-        }
-
-        // IP 기반 1차 검증
-        Bucket ipBucket = rateLimiter.resolveBucket(ipKey, isPenalty);
-        ConsumptionProbe ipProbe = ipBucket.tryConsumeAndReturnRemaining(cost); // IP 버킷에서 cost만큼 토큰 소모
-
-        if (ipProbe.isConsumed()) {
-            // IP 통과 시, 로그인 유저는 User Bucket으로 2차 검증
-            if (userKey != null) {
-                Bucket userBucket = rateLimiter.resolveBucket(userKey, false);
-                ConsumptionProbe userProbe = userBucket.tryConsumeAndReturnRemaining(cost); // 유저 버킷에서 cost만큼 토큰 소모
-
-                if (!userProbe.isConsumed()) {
-                    log.warn("Rate limit 초과 (유저): IP={}, userId={}, URI={}", clientIp, userId, request.getRequestURI());
-                    return handleRateLimitExceeded(response, userProbe.getNanosToWaitForRefill(), clientIp); // 단순 429 반환 (위반 카운트 증가 없음)
-                }
-                response.addHeader("X-Rate-Limit-User-Remaining", String.valueOf(userProbe.getRemainingTokens()));
+            boolean isPenalty = rateLimiter.isInPenaltyBox(clientIp);
+            if (isPenalty) {
+                log.warn("페널티 박스 적용 중: IP={}", clientIp);
+                response.addHeader("X-Rate-Limit-Penalty", "true");
             }
 
-            response.addHeader("X-Rate-Limit-Ip-Remaining", String.valueOf(ipProbe.getRemainingTokens()));
+            // IP 기반 1차 검증
+            Bucket ipBucket = rateLimiter.resolveBucket(ipKey, isPenalty);
+            ConsumptionProbe ipProbe = ipBucket.tryConsumeAndReturnRemaining(cost);
+
+            if (ipProbe.isConsumed()) {
+                // IP 통과 시, 로그인 유저는 User Bucket으로 2차 검증
+                if (userKey != null) {
+                    Bucket userBucket = rateLimiter.resolveBucket(userKey, false);
+                    ConsumptionProbe userProbe = userBucket.tryConsumeAndReturnRemaining(cost);
+
+                    if (!userProbe.isConsumed()) {
+                        log.warn("Rate limit 초과 (유저): IP={}, userId={}, URI={}", clientIp, userId, request.getRequestURI());
+                        return handleRateLimitExceeded(response, userProbe.getNanosToWaitForRefill(), clientIp);
+                    }
+                    response.addHeader("X-Rate-Limit-User-Remaining", String.valueOf(userProbe.getRemainingTokens()));
+                }
+
+                response.addHeader("X-Rate-Limit-Ip-Remaining", String.valueOf(ipProbe.getRemainingTokens()));
+                return true;
+            } else {
+                rateLimiter.incrementViolationCount(clientIp);
+                log.warn("Rate limit 초과 (위반 누적): IP={}, userId={}, URI={}", clientIp, userId, request.getRequestURI());
+                return handleRateLimitExceeded(response, ipProbe.getNanosToWaitForRefill(), clientIp);
+            }
+        } catch (Exception e) {
+            log.error("Rate limit 검사 실패, fail-open 처리: {}", e.getMessage());
             return true;
-        } else {
-            // 위반 누적 → 50회 초과 시 다음 요청부터 페널티 (버킷 100→10)
-            rateLimiter.incrementViolationCount(clientIp);
-            log.warn("Rate limit 초과 (위반 누적): IP={}, userId={}, URI={}", clientIp, userId, request.getRequestURI());
-            return handleRateLimitExceeded(response, ipProbe.getNanosToWaitForRefill(), clientIp); // 429 반환
         }
     }
 
