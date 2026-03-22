@@ -65,21 +65,21 @@ public class AuthService {
 
     @Transactional
     public TokenResponse reissue(String refreshToken) {
-        if (!tokenProvider.validateToken(refreshToken)) {
-            log.warn("토큰 갱신 실패 - 유효하지 않은 리프레시 토큰");
-            throw new InvalidTokenException();
-        }
-
-        String username = tokenProvider.getUsername(refreshToken);
-
-        User user = userRepository.findByUsername(username)
+        TokenProvider.TokenClaims claims = tokenProvider.parseAndValidate(refreshToken)
+                .filter(TokenProvider.TokenClaims::isRefresh)
                 .orElseThrow(() -> {
-                    log.warn("토큰 갱신 실패 - 사용자 없음: username={}", username);
+                    log.warn("토큰 갱신 실패 - 유효하지 않은 리프레시 토큰");
+                    return new InvalidTokenException();
+                });
+
+        User user = userRepository.findByUsername(claims.username())
+                .orElseThrow(() -> {
+                    log.warn("토큰 갱신 실패 - 사용자 없음: username={}", claims.username());
                     return new InvalidTokenException();
                 });
 
         if (!refreshToken.equals(user.getRefreshToken())) {
-            log.warn("토큰 갱신 실패 - 저장된 토큰과 불일치: username={}", username);
+            log.warn("토큰 갱신 실패 - 저장된 토큰과 불일치: username={}", claims.username());
             throw new InvalidTokenException();
         }
 
@@ -94,15 +94,16 @@ public class AuthService {
 
     @Transactional
     public void logout(String refreshToken) {
-        if (!tokenProvider.validateToken(refreshToken)) {
-            return;
-        }
-        String username = tokenProvider.getUsername(refreshToken);
-        userRepository.findByUsername(username)
-                .ifPresent(user -> {
-                    user.updateRefreshToken(null);
-                    log.info("로그아웃: username={}", username);
-                });
+        tokenProvider.parseAndValidate(refreshToken)
+                .filter(TokenProvider.TokenClaims::isRefresh)
+                .ifPresentOrElse(
+                claims -> userRepository.findByUsername(claims.username())
+                        .ifPresent(user -> {
+                            user.updateRefreshToken(null);
+                            log.info("로그아웃: username={}", claims.username());
+                        }),
+                () -> log.debug("로그아웃 요청 - 유효하지 않은 토큰 무시")
+        );
     }
 
     public record TokenResponse(String accessToken, String refreshToken) {

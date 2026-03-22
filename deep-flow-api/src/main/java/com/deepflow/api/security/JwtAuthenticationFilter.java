@@ -17,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -30,17 +31,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = resolveToken(request);
 
         if (token != null) {
-            if (tokenProvider.validateToken(token)) {
-                String username = tokenProvider.getUsername(token);
-                Long userId = tokenProvider.getUserId(token);
+            Optional<TokenProvider.TokenClaims> parsed = tokenProvider.parseAndValidate(token);
 
-                UserDetails userDetails = new CustomUserDetails(username, "", Collections.emptyList(), userId);
-
-                Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("JWT 인증 성공: userId={}", userId);
+            if (parsed.isEmpty()) {
+                log.warn("JWT 파싱 실패 (만료/위변조): IP={}", request.getRemoteAddr());
+            } else if (!parsed.get().isAccess()) {
+                log.warn("Access 토큰이 아닌 토큰으로 인증 시도: IP={}", request.getRemoteAddr());
             } else {
-                log.warn("유효하지 않은 JWT 토큰: IP={}", request.getRemoteAddr());
+                TokenProvider.TokenClaims claims = parsed.get();
+                UserDetails userDetails = new CustomUserDetails(
+                        claims.username(), "", Collections.emptyList(), claims.userId());
+                Authentication authentication = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                log.debug("JWT 인증 성공: userId={}", claims.userId());
             }
         }
 
