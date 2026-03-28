@@ -4,6 +4,7 @@ import com.deepflow.application.common.SliceResult;
 import com.deepflow.application.exception.ResourceNotFoundException;
 import com.deepflow.application.exception.session.SessionAlreadyExistsException;
 import com.deepflow.application.exception.session.SessionNotDeletableException;
+import com.deepflow.application.image.ImageService;
 import com.deepflow.application.lock.DistributedLock;
 import com.deepflow.application.port.out.persistence.SessionRepository;
 import com.deepflow.application.port.out.persistence.UserRepository;
@@ -33,6 +34,7 @@ public class SessionService {
 
     private final SessionRepository sessionRepository;
     private final UserRepository userRepository;
+    private final ImageService imageService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -72,7 +74,14 @@ public class SessionService {
     @Transactional
     public void updateLog(Long userId, Long id, String title, String content, String summary, List<String> imageUrls) {
         FocusSession session = getOwnedSession(id, userId);
+
+        List<String> oldUrls = session.getFocusLog().getImages().stream()
+                .map(img -> img.getImageUrl())
+                .toList();
+
         session.getFocusLog().update(title, content, summary, imageUrls);
+
+        imageService.deleteRemovedImages(oldUrls, imageUrls);
         log.debug("로그 수정: sessionId={}, userId={}", id, userId);
     }
 

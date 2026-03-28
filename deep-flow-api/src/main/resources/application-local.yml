@@ -21,3 +21,9 @@ app:
     cookie:
       secure: false
       same-site: Lax
+  r2:
+    endpoint: https://e88d07b01b24fe0128c47001d7db0076.r2.cloudflarestorage.com
+    access-key: ${R2_ACCESS_KEY}
+    secret-key: ${R2_SECRET_KEY}
+    bucket: deep-flow
+    public-url: https://pub-1946749051ee4fb6b5cb17f28943fc88.r2.dev

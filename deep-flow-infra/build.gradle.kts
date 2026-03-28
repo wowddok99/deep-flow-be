@@ -6,7 +6,7 @@ dependencies {
     implementation(project(":deep-flow-domain"))
     implementation(project(":deep-flow-application"))
 
-    // JPA (domain에서 분리됨 → infra에서 직접 관리)
+    // JPA
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
     // Redis
@@ -33,6 +33,10 @@ dependencies {
 
     // Security (PasswordEncoder)
     implementation("org.springframework.security:spring-security-crypto")
+
+    // S3 (Cloudflare R2)
+    implementation(platform("software.amazon.awssdk:bom:2.25.16"))
+    implementation("software.amazon.awssdk:s3")
 
     // DB
     runtimeOnly("com.mysql:mysql-connector-j")
