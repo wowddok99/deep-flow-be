@@ -17,4 +17,8 @@ public interface StatsRepository {
     int sumSessionsByUserIdAndDateBetween(Long userId, LocalDate from, LocalDate to);
 
     long sumDurationByUserIdAndDateBetween(Long userId, LocalDate from, LocalDate to);
+
+    long sumTotalSessionsByUserId(Long userId);
+
+    long sumTotalDurationByUserId(Long userId);
 }

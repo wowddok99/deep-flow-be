@@ -39,4 +39,14 @@ public class StatsRepositoryImpl implements StatsRepository {
     public long sumDurationByUserIdAndDateBetween(Long userId, LocalDate from, LocalDate to) {
         return jpaRepository.sumDurationByUserIdAndDateBetween(userId, from, to);
     }
+
+    @Override
+    public long sumTotalSessionsByUserId(Long userId) {
+        return jpaRepository.sumTotalSessionsByUserId(userId);
+    }
+
+    @Override
+    public long sumTotalDurationByUserId(Long userId) {
+        return jpaRepository.sumTotalDurationByUserId(userId);
+    }
 }

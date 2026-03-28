@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 interface SessionJpaRepository extends JpaRepository<FocusSession, Long> {
@@ -27,4 +28,22 @@ interface SessionJpaRepository extends JpaRepository<FocusSession, Long> {
 
     @Query("SELECT s FROM FocusSession s JOIN FETCH s.focusLog fl LEFT JOIN FETCH fl.images WHERE s.id = :id AND s.user.id = :userId")
     Optional<FocusSession> findByIdAndUserIdWithLogAndImages(@Param("id") Long id, @Param("userId") Long userId);
+
+    @Query("SELECT COUNT(s) FROM FocusSession s WHERE s.user.id = :userId AND s.status = 'COMPLETED' AND HOUR(s.endTime) >= :fromHour AND HOUR(s.endTime) < :toHour")
+    long countByUserIdAndEndTimeHourBetween(@Param("userId") Long userId, @Param("fromHour") int fromHour, @Param("toHour") int toHour);
+
+    @Query("SELECT COUNT(s) FROM FocusSession s WHERE s.user.id = :userId AND s.status = 'COMPLETED' AND DAYOFWEEK(s.startTime) = :dow")
+    long countByUserIdAndDayOfWeek(@Param("userId") Long userId, @Param("dow") int dow);
+
+    @Query("SELECT COUNT(s) FROM FocusSession s WHERE s.user.id = :userId AND s.status = 'COMPLETED' AND s.startTime >= :dayStart AND s.startTime < :dayEnd AND s.durationSeconds >= :minDuration")
+    long countByUserIdAndDateAndMinDuration(@Param("userId") Long userId, @Param("dayStart") LocalDateTime dayStart, @Param("dayEnd") LocalDateTime dayEnd, @Param("minDuration") long minDuration);
+
+    @Query("SELECT COUNT(s) FROM FocusSession s WHERE s.user.id = :userId AND s.status = 'COMPLETED' AND LENGTH(s.focusLog.content) >= :minLength")
+    long countByUserIdWithMinContentLength(@Param("userId") Long userId, @Param("minLength") int minLength);
+
+    @Query("SELECT COUNT(s) FROM FocusSession s WHERE s.user.id = :userId AND s.status = 'COMPLETED' AND SIZE(s.focusLog.images) > 0")
+    long countByUserIdWithImages(@Param("userId") Long userId);
+
+    @Query("SELECT COALESCE(SUM(SIZE(s.focusLog.images)), 0) FROM FocusSession s WHERE s.user.id = :userId AND s.status = 'COMPLETED'")
+    long countTotalImagesByUserId(@Param("userId") Long userId);
 }

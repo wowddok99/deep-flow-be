@@ -1,5 +1,6 @@
 package com.deepflow.domain.user;
 
+import com.deepflow.domain.achievement.Achievement;
 import com.deepflow.domain.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -34,6 +35,10 @@ public class User extends BaseTimeEntity {
 
     private LocalDateTime lastLoginAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "display_achievement_id")
+    private Achievement displayAchievement;
+
     @Builder
     public User(String username, String password, String name, Role role) {
         this.username = username;
@@ -44,6 +49,10 @@ public class User extends BaseTimeEntity {
 
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
+    }
+
+    public void updateDisplayAchievement(Achievement achievement) {
+        this.displayAchievement = achievement;
     }
 
     public void afterLogin() {
