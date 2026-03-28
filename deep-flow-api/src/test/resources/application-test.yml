@@ -21,6 +21,12 @@ app:
       secure: false
       same-site: Lax
       max-age: 604800
+  r2:
+    endpoint: http://localhost:9000
+    access-key: test
+    secret-key: test
+    bucket: test
+    public-url: http://localhost:9000/test
 
 logging:
   level:
