@@ -27,8 +27,6 @@ public record SessionDetailResponse(
     String title,
     @Schema(description = "Log summary", example = "Studied JPA and Spring Security")
     String summary,
-    @Schema(description = "AI-generated summary")
-    String aiSummary,
     @Schema(description = "Attached image URLs")
     List<String> imageUrls
 ) {
@@ -37,7 +35,7 @@ public record SessionDetailResponse(
             info.id(), info.startTime(), info.endTime(),
             info.durationSeconds(), info.status(),
             contentNode, info.title(), info.summary(),
-            info.aiSummary(), info.imageUrls()
+            info.imageUrls()
         );
     }
 }

@@ -26,8 +26,6 @@ public class FocusLog extends BaseTimeEntity {
 
     private String summary;
 
-    private String aiSummary;
-
     @Builder.Default
     @OneToMany(mappedBy = "focusLog", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FocusLogImage> images = new ArrayList<>();
@@ -38,10 +36,6 @@ public class FocusLog extends BaseTimeEntity {
         this.summary = summary;
 
         updateImages(imageUrls);
-    }
-
-    public void updateAiSummary(String aiSummary) {
-        this.aiSummary = aiSummary;
     }
 
     private void updateImages(List<String> newImageUrls) {

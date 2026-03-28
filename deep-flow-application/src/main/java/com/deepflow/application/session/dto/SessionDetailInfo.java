@@ -16,7 +16,6 @@ public record SessionDetailInfo(
     String title,
     String content,
     String summary,
-    String aiSummary,
     List<String> imageUrls
 ) {
     public static SessionDetailInfo from(FocusSession session) {
@@ -34,7 +33,6 @@ public record SessionDetailInfo(
             log.getTitle(),
             log.getContent(),
             log.getSummary(),
-            log.getAiSummary(),
             urls
         );
     }

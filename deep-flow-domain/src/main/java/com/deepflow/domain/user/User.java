@@ -29,6 +29,7 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false)
     private Role role;
 
+    @Column(columnDefinition = "TEXT")
     private String refreshToken;
 
     private LocalDateTime lastLoginAt;

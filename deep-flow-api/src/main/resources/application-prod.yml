@@ -18,5 +18,3 @@ app:
     cookie:
       secure: true
       same-site: None
-  ai:
-    enabled: ${AI_ENABLED:false}

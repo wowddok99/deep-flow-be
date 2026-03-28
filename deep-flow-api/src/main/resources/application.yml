@@ -47,8 +47,6 @@ app:
       secure: false
       same-site: Lax
       max-age: ${APP_AUTH_COOKIE_MAX_AGE:604800}
-  ai:
-    enabled: ${AI_ENABLED:false}
   async:
     core-pool-size: 5
     max-pool-size: 30
