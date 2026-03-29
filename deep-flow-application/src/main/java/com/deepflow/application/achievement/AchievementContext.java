@@ -12,7 +12,8 @@ public record AchievementContext(
     long totalSessions,
     int currentStreak,
     LocalDate userCreatedDate,
-    Set<String> achievedCodes
+    Set<String> achievedCodes,
+    TriggerType triggerType
 ) {
     public boolean alreadyAchieved(String code) {
         return achievedCodes.contains(code);

@@ -99,4 +99,9 @@ public class SessionRepositoryImpl implements SessionRepository {
     public long countTotalImagesByUserId(Long userId) {
         return jpaRepository.countTotalImagesByUserId(userId);
     }
+
+    @Override
+    public List<FocusSession> findAllByStatus(SessionStatus status) {
+        return jpaRepository.findAllByStatus(status);
+    }
 }

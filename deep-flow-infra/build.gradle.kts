@@ -28,6 +28,9 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind")
     api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
+    // Web (SSE support)
+    implementation("org.springframework:spring-webmvc")
+
     // AOP
     api("org.springframework.boot:spring-boot-starter-aop")
 

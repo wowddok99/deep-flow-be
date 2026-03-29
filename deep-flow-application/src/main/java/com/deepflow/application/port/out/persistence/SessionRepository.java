@@ -5,6 +5,7 @@ import com.deepflow.domain.session.FocusSession;
 import com.deepflow.domain.session.SessionStatus;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 public interface SessionRepository {
@@ -32,4 +33,6 @@ public interface SessionRepository {
     long countByUserIdWithImages(Long userId);
 
     long countTotalImagesByUserId(Long userId);
+
+    List<FocusSession> findAllByStatus(SessionStatus status);
 }

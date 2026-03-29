@@ -10,6 +10,7 @@ INSERT IGNORE INTO achievement (code, name, description, category, grade, hidden
 
 -- 카테고리 2: 단일 세션 몰입 (DEEP_DIVE)
 INSERT IGNORE INTO achievement (code, name, description, category, grade, hidden, created_at, updated_at) VALUES
+('D-00', '수면 위로', '첫 숨을 내쉬다', 'DEEP_DIVE', 1, false, NOW(), NOW()),
 ('D-01', '발끝 담그기', '물에 발을 담그다', 'DEEP_DIVE', 1, false, NOW(), NOW()),
 ('D-02', '무릎까지', '조금 더 깊이', 'DEEP_DIVE', 1, false, NOW(), NOW()),
 ('D-03', '잔잔한 호수', '고요한 집중의 시작', 'DEEP_DIVE', 2, false, NOW(), NOW()),

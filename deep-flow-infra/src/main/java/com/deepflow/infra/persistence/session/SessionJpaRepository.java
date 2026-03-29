@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 interface SessionJpaRepository extends JpaRepository<FocusSession, Long> {
@@ -46,4 +47,7 @@ interface SessionJpaRepository extends JpaRepository<FocusSession, Long> {
 
     @Query("SELECT COALESCE(SUM(SIZE(s.focusLog.images)), 0) FROM FocusSession s WHERE s.user.id = :userId AND s.status = 'COMPLETED'")
     long countTotalImagesByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT s FROM FocusSession s JOIN FETCH s.user JOIN FETCH s.focusLog WHERE s.status = :status AND s.deletedAt IS NULL")
+    List<FocusSession> findAllByStatus(@Param("status") SessionStatus status);
 }
