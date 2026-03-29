@@ -7,9 +7,14 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+    defer-datasource-initialization: true
     properties:
       hibernate:
         show_sql: true
+
+  sql:
+    init:
+      mode: always
 
 jwt:
   secret: ZnJvbV9kZWVwX2Zsb3dfYXBwbGljYXRpb25fYmFja2VuZF9zZWNyZXRfa2V5XzEyMzQ1Njc4OTAxMjM0NTY3ODkw

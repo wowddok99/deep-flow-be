@@ -20,4 +20,10 @@ interface StatsJpaRepository extends JpaRepository<DailyFocusStats, Long> {
 
     @Query("SELECT COALESCE(SUM(s.totalDurationSeconds), 0) FROM DailyFocusStats s WHERE s.userId = :userId AND s.date BETWEEN :from AND :to")
     long sumDurationByUserIdAndDateBetween(@Param("userId") Long userId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    @Query("SELECT COALESCE(SUM(s.totalSessions), 0) FROM DailyFocusStats s WHERE s.userId = :userId")
+    long sumTotalSessionsByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT COALESCE(SUM(s.totalDurationSeconds), 0) FROM DailyFocusStats s WHERE s.userId = :userId")
+    long sumTotalDurationByUserId(@Param("userId") Long userId);
 }

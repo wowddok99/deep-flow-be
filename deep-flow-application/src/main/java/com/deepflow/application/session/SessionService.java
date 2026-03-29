@@ -5,6 +5,7 @@ import com.deepflow.application.exception.ResourceNotFoundException;
 import com.deepflow.application.exception.session.SessionAlreadyExistsException;
 import com.deepflow.application.exception.session.SessionNotDeletableException;
 import com.deepflow.application.image.ImageService;
+import com.deepflow.application.achievement.SessionTimeScheduler;
 import com.deepflow.application.lock.DistributedLock;
 import com.deepflow.application.port.out.persistence.SessionRepository;
 import com.deepflow.application.port.out.persistence.UserRepository;
@@ -13,6 +14,7 @@ import com.deepflow.application.session.dto.SessionInfo;
 import com.deepflow.application.session.dto.SessionSummaryInfo;
 import com.deepflow.domain.session.FocusSession;
 import com.deepflow.domain.session.SessionStatus;
+import com.deepflow.domain.session.event.LogUpdatedEvent;
 import com.deepflow.domain.session.event.SessionStoppedEvent;
 import com.deepflow.domain.user.User;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,7 @@ public class SessionService {
     private final UserRepository userRepository;
     private final ImageService imageService;
     private final ApplicationEventPublisher eventPublisher;
+    private final SessionTimeScheduler sessionTimeScheduler;
 
     @Transactional
     @DistributedLock(key = "'session_start:' + #userId")
@@ -49,6 +52,7 @@ public class SessionService {
 
         FocusSession session = FocusSession.create(LocalDateTime.now(), user);
         SessionInfo info = SessionInfo.from(sessionRepository.save(session));
+        sessionTimeScheduler.scheduleForSession(userId, info.id());
         log.info("세션 시작: sessionId={}, userId={}", info.id(), userId);
         return info;
     }
@@ -82,6 +86,10 @@ public class SessionService {
         session.getFocusLog().update(title, content, summary, imageUrls);
 
         imageService.deleteRemovedImages(oldUrls, imageUrls);
+
+        // 로그 업데이트 시 실시간 칭호 체크 이벤트 발행
+        eventPublisher.publishEvent(new LogUpdatedEvent(session.getId(), userId));
+
         log.debug("로그 수정: sessionId={}, userId={}", id, userId);
     }
 
@@ -90,6 +98,7 @@ public class SessionService {
     public void stopSession(Long userId, Long id) {
         FocusSession session = getOwnedSession(id, userId);
         session.stop(LocalDateTime.now());
+        sessionTimeScheduler.cancelForSession(id);
         log.info("세션 종료: sessionId={}, userId={}, duration={}s", id, userId, session.getDurationSeconds());
 
         eventPublisher.publishEvent(new SessionStoppedEvent(
