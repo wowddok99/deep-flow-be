@@ -21,4 +21,8 @@ public interface StatsRepository {
     long sumTotalSessionsByUserId(Long userId);
 
     long sumTotalDurationByUserId(Long userId);
+
+    List<LocalDate> findAllDatesByUserId(Long userId);
+
+    List<Object[]> findDayOfWeekStatsByUserId(Long userId);
 }

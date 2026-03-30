@@ -49,4 +49,14 @@ public class StatsRepositoryImpl implements StatsRepository {
     public long sumTotalDurationByUserId(Long userId) {
         return jpaRepository.sumTotalDurationByUserId(userId);
     }
+
+    @Override
+    public List<LocalDate> findAllDatesByUserId(Long userId) {
+        return jpaRepository.findAllDatesByUserId(userId);
+    }
+
+    @Override
+    public List<Object[]> findDayOfWeekStatsByUserId(Long userId) {
+        return jpaRepository.findDayOfWeekStatsByUserId(userId);
+    }
 }
