@@ -104,4 +104,19 @@ public class SessionRepositoryImpl implements SessionRepository {
     public List<FocusSession> findAllByStatus(SessionStatus status) {
         return jpaRepository.findAllByStatus(status);
     }
+
+    @Override
+    public List<Object[]> findHourlyDistribution(Long userId) {
+        return jpaRepository.findHourlyDistribution(userId);
+    }
+
+    @Override
+    public long countLogsWithTitle(Long userId) {
+        return jpaRepository.countLogsWithTitle(userId);
+    }
+
+    @Override
+    public double avgContentLength(Long userId) {
+        return jpaRepository.avgContentLength(userId);
+    }
 }

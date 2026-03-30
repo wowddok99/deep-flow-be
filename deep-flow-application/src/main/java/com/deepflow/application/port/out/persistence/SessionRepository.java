@@ -35,4 +35,10 @@ public interface SessionRepository {
     long countTotalImagesByUserId(Long userId);
 
     List<FocusSession> findAllByStatus(SessionStatus status);
+
+    List<Object[]> findHourlyDistribution(Long userId);
+
+    long countLogsWithTitle(Long userId);
+
+    double avgContentLength(Long userId);
 }
