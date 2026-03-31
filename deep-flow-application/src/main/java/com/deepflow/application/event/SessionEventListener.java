@@ -31,9 +31,8 @@ public class SessionEventListener {
         log.info("Processing session stopped event: sessionId={}, userId={}, duration={}s",
                 event.getSessionId(), event.getUserId(), event.getDurationSeconds());
 
-        // 순서 중요: 통계가 먼저 커밋되어야 칭호 평가 시 오늘 통계가 반영됨
         try {
-            dailyFocusStatsService.upsertStats(event.getUserId(), event.getDurationSeconds());
+            dailyFocusStatsService.upsertStats(event.getUserId(), event.getStartTime(), event.getEndTime());
         } catch (Exception e) {
             log.error("Failed to update daily stats for session {}", event.getSessionId(), e);
         }

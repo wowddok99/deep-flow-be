@@ -41,4 +41,8 @@ public class DailyFocusStats extends BaseTimeEntity {
         this.totalSessions++;
         this.totalDurationSeconds += durationSeconds;
     }
+
+    public void addDuration(long durationSeconds) {
+        this.totalDurationSeconds += durationSeconds;
+    }
 }
