@@ -8,7 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,25 +23,49 @@ public class DailyFocusStatsService {
     private final StatsRepository statsRepository;
 
     @Transactional
-    public void upsertStats(Long userId, long durationSeconds) {
-        LocalDate today = LocalDate.now();
+    public void upsertStats(Long userId, LocalDateTime startTime, LocalDateTime endTime) {
+        LocalDateTime currentStart = startTime;
+        boolean isFirstDay = true;
 
-        Optional<DailyFocusStats> existingStats =
-                statsRepository.findByUserIdAndDate(userId, today);
+        while (currentStart.toLocalDate().isBefore(endTime.toLocalDate())) {
+            LocalDateTime nextMidnight = currentStart.toLocalDate().plusDays(1).atStartOfDay();
+            long seconds = Duration.between(currentStart, nextMidnight).getSeconds();
+
+            if (seconds > 0) {
+                upsertDailyStats(userId, currentStart.toLocalDate(), isFirstDay ? 1 : 0, seconds);
+            }
+
+            currentStart = nextMidnight;
+            isFirstDay = false;
+        }
+
+        long seconds = Duration.between(currentStart, endTime).getSeconds();
+        if (seconds > 0) {
+            upsertDailyStats(userId, currentStart.toLocalDate(), isFirstDay ? 1 : 0, seconds);
+        }
+    }
+
+    private void upsertDailyStats(Long userId, LocalDate date, int sessionDelta, long durationSeconds) {
+        Optional<DailyFocusStats> existingStats = statsRepository.findByUserIdAndDate(userId, date);
 
         if (existingStats.isPresent()) {
-            existingStats.get().addSession(durationSeconds);
+            DailyFocusStats stats = existingStats.get();
+            if (sessionDelta > 0) {
+                stats.addSession(durationSeconds);
+            } else {
+                stats.addDuration(durationSeconds);
+            }
         } else {
             DailyFocusStats stats = DailyFocusStats.builder()
                     .userId(userId)
-                    .date(today)
-                    .totalSessions(1)
+                    .date(date)
+                    .totalSessions(sessionDelta)
                     .totalDurationSeconds(durationSeconds)
                     .build();
             statsRepository.save(stats);
         }
 
-        log.info("Updated daily stats for user {} on {}", userId, today);
+        log.info("Updated daily stats for user {} on {}", userId, date);
     }
 
     public StatsOverview getOverview(Long userId) {

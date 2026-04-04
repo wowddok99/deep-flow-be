@@ -104,7 +104,9 @@ public class SessionService {
         eventPublisher.publishEvent(new SessionStoppedEvent(
                 session.getId(),
                 session.getUser().getId(),
-                session.getDurationSeconds()));
+                session.getDurationSeconds(),
+                session.getStartTime(),
+                session.getEndTime()));
     }
 
     @CacheEvict(value = "sessions", key = "#id")
