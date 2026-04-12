@@ -106,8 +106,8 @@ public class SessionRepositoryImpl implements SessionRepository {
     }
 
     @Override
-    public List<Object[]> findHourlyDistribution(Long userId) {
-        return jpaRepository.findHourlyDistribution(userId);
+    public List<FocusSession> findCompletedSessionsAfter(Long userId, LocalDateTime from) {
+        return jpaRepository.findCompletedSessionsAfter(userId, from);
     }
 
     @Override

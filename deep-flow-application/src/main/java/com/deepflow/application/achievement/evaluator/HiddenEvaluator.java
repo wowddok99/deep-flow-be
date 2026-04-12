@@ -81,7 +81,7 @@ public class HiddenEvaluator implements AchievementEvaluator {
                 for (int i = 1; i <= 30; i++) {
                     LocalDate checkDate = LocalDate.now().minusDays(i);
                     boolean hasSession = statsRepository.findByUserIdAndDate(context.userId(), checkDate)
-                            .map(s -> s.getTotalSessions() > 0).orElse(false);
+                            .map(s -> s.getTotalDurationSeconds() > 0).orElse(false);
                     if (!hasSession) {
                         gapDays++;
                     } else {

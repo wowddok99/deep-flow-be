@@ -27,7 +27,7 @@ interface StatsJpaRepository extends JpaRepository<DailyFocusStats, Long> {
     @Query("SELECT COALESCE(SUM(s.totalDurationSeconds), 0) FROM DailyFocusStats s WHERE s.userId = :userId")
     long sumTotalDurationByUserId(@Param("userId") Long userId);
 
-    @Query("SELECT s.date FROM DailyFocusStats s WHERE s.userId = :userId AND s.totalSessions > 0 ORDER BY s.date ASC")
+    @Query("SELECT s.date FROM DailyFocusStats s WHERE s.userId = :userId AND s.totalDurationSeconds > 0 ORDER BY s.date ASC")
     List<LocalDate> findAllDatesByUserId(@Param("userId") Long userId);
 
     @Query("SELECT DAYOFWEEK(s.date), SUM(s.totalSessions), SUM(s.totalDurationSeconds) FROM DailyFocusStats s WHERE s.userId = :userId GROUP BY DAYOFWEEK(s.date)")

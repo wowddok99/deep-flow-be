@@ -51,8 +51,8 @@ interface SessionJpaRepository extends JpaRepository<FocusSession, Long> {
     @Query("SELECT s FROM FocusSession s JOIN FETCH s.user JOIN FETCH s.focusLog WHERE s.status = :status AND s.deletedAt IS NULL")
     List<FocusSession> findAllByStatus(@Param("status") SessionStatus status);
 
-    @Query("SELECT HOUR(s.startTime), COUNT(s) FROM FocusSession s WHERE s.user.id = :userId AND s.status = 'COMPLETED' AND s.endTime IS NOT NULL GROUP BY HOUR(s.startTime)")
-    List<Object[]> findHourlyDistribution(@Param("userId") Long userId);
+    @Query("SELECT s FROM FocusSession s WHERE s.user.id = :userId AND s.status = 'COMPLETED' AND s.endTime IS NOT NULL AND s.startTime >= :from")
+    List<FocusSession> findCompletedSessionsAfter(@Param("userId") Long userId, @Param("from") LocalDateTime from);
 
     @Query("SELECT COUNT(s) FROM FocusSession s WHERE s.user.id = :userId AND s.status = 'COMPLETED' AND s.focusLog.title IS NOT NULL AND s.focusLog.title <> ''")
     long countLogsWithTitle(@Param("userId") Long userId);
