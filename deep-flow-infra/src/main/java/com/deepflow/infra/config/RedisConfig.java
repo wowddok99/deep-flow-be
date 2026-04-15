@@ -1,6 +1,7 @@
 package com.deepflow.infra.config;
 
 import com.deepflow.application.session.dto.SessionDetailInfo;
+import com.deepflow.application.stats.dto.HourlyDistributionInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,11 +12,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
+import java.util.List;
 
 @Configuration
 @EnableCaching
@@ -47,8 +50,19 @@ public class RedisConfig {
                 .serializeValuesWith(SerializationPair.fromSerializer(sessionSerializer))
                 .entryTtl(Duration.ofMinutes(cacheTtlMinutes));
 
+        Jackson2JsonRedisSerializer<List<HourlyDistributionInfo>> hourlySerializer =
+                new Jackson2JsonRedisSerializer<>(mapper,
+                        mapper.getTypeFactory().constructCollectionType(List.class, HourlyDistributionInfo.class));
+
+        RedisCacheConfiguration hourlyConfig = RedisCacheConfiguration.defaultCacheConfig()
+                .prefixCacheNameWith(cacheVersion + "::")
+                .serializeKeysWith(SerializationPair.fromSerializer(new StringRedisSerializer()))
+                .serializeValuesWith(SerializationPair.fromSerializer(hourlySerializer))
+                .entryTtl(Duration.ofHours(24));
+
         return RedisCacheManager.builder(connectionFactory)
                 .withCacheConfiguration("sessions", sessionConfig)
+                .withCacheConfiguration("hourlyDistribution", hourlyConfig)
                 .build();
     }
 }

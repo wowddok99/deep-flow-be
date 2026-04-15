@@ -36,7 +36,7 @@ public interface SessionRepository {
 
     List<FocusSession> findAllByStatus(SessionStatus status);
 
-    List<Object[]> findHourlyDistribution(Long userId);
+    List<FocusSession> findCompletedSessionsAfter(Long userId, java.time.LocalDateTime from);
 
     long countLogsWithTitle(Long userId);
 

@@ -4,11 +4,14 @@ import com.deepflow.application.port.out.persistence.*;
 import com.deepflow.application.stats.dto.*;
 import com.deepflow.domain.stats.DailyFocusStats;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.deepflow.domain.session.FocusSession;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -101,18 +104,29 @@ public class StatsDashboardService {
         return result;
     }
 
+    @Cacheable(value = "hourlyDistribution", key = "#userId")
     public List<HourlyDistributionInfo> getHourlyDistribution(Long userId) {
-        List<Object[]> raw = sessionRepository.findHourlyDistribution(userId);
+        LocalDateTime from = LocalDate.now().minusMonths(6).atStartOfDay();
+        List<FocusSession> sessions = sessionRepository.findCompletedSessionsAfter(userId, from);
+        long[] counts = new long[24];
 
-        Map<Integer, Long> byHour = raw.stream()
-                .collect(Collectors.toMap(
-                        r -> ((Number) r[0]).intValue(),
-                        r -> ((Number) r[1]).longValue()
-                ));
+        for (FocusSession s : sessions) {
+            LocalDateTime cursor = s.getStartTime().truncatedTo(ChronoUnit.HOURS);
+            LocalDateTime endTruncated = s.getEndTime().truncatedTo(ChronoUnit.HOURS);
+
+            if (s.getEndTime().equals(endTruncated)) {
+                endTruncated = endTruncated.minusHours(1);
+            }
+
+            while (!cursor.isAfter(endTruncated)) {
+                counts[cursor.getHour()]++;
+                cursor = cursor.plusHours(1);
+            }
+        }
 
         List<HourlyDistributionInfo> result = new ArrayList<>();
         for (int h = 0; h < 24; h++) {
-            result.add(new HourlyDistributionInfo(h, byHour.getOrDefault(h, 0L)));
+            result.add(new HourlyDistributionInfo(h, counts[h]));
         }
         return result;
     }

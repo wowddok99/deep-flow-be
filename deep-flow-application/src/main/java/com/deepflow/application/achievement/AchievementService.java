@@ -152,7 +152,7 @@ public class AchievementService {
 
         while (true) {
             boolean hasSession = statsRepository.findByUserIdAndDate(userId, checkDate)
-                    .map(s -> s.getTotalSessions() > 0)
+                    .map(s -> s.getTotalDurationSeconds() > 0)
                     .orElse(false);
 
             if (!hasSession) break;

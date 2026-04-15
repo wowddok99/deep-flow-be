@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -93,7 +94,10 @@ public class SessionService {
         log.debug("로그 수정: sessionId={}, userId={}", id, userId);
     }
 
-    @CacheEvict(value = "sessions", key = "#id")
+    @Caching(evict = {
+            @CacheEvict(value = "sessions", key = "#id"),
+            @CacheEvict(value = "hourlyDistribution", key = "#userId")
+    })
     @Transactional
     public void stopSession(Long userId, Long id) {
         FocusSession session = getOwnedSession(id, userId);
