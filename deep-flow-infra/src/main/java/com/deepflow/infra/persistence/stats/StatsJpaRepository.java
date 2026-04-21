@@ -32,4 +32,13 @@ interface StatsJpaRepository extends JpaRepository<DailyFocusStats, Long> {
 
     @Query("SELECT DAYOFWEEK(s.date), SUM(s.totalSessions), SUM(s.totalDurationSeconds) FROM DailyFocusStats s WHERE s.userId = :userId GROUP BY DAYOFWEEK(s.date)")
     List<Object[]> findDayOfWeekStatsByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT DISTINCT s.userId FROM DailyFocusStats s WHERE s.userId IN :userIds AND s.date = :date AND s.totalSessions > 0")
+    List<Long> findUserIdsWithActivityOnDate(@Param("userIds") List<Long> userIds, @Param("date") LocalDate date);
+
+    @Query("SELECT COALESCE(SUM(s.totalDurationSeconds), 0) FROM DailyFocusStats s WHERE s.userId IN :userIds AND s.date = :date")
+    long sumDurationByUserIdsOnDate(@Param("userIds") List<Long> userIds, @Param("date") LocalDate date);
+
+    @Query("SELECT s.userId, s.totalDurationSeconds FROM DailyFocusStats s WHERE s.userId IN :userIds AND s.date = :date AND s.totalDurationSeconds > 0 ORDER BY s.totalDurationSeconds DESC")
+    List<Object[]> findMemberRankingByUserIdsOnDate(@Param("userIds") List<Long> userIds, @Param("date") LocalDate date, org.springframework.data.domain.Pageable pageable);
 }

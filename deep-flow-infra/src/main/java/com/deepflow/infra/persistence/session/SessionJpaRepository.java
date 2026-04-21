@@ -59,4 +59,7 @@ interface SessionJpaRepository extends JpaRepository<FocusSession, Long> {
 
     @Query("SELECT COALESCE(AVG(LENGTH(s.focusLog.content)), 0) FROM FocusSession s WHERE s.user.id = :userId AND s.status = 'COMPLETED' AND s.focusLog.content IS NOT NULL AND s.focusLog.content <> '{}'")
     double avgContentLength(@Param("userId") Long userId);
+
+    @Query("SELECT DISTINCT s.user.id FROM FocusSession s WHERE s.user.id IN :userIds AND s.status = 'ONGOING'")
+    List<Long> findOngoingUserIdsByUserIds(@Param("userIds") List<Long> userIds);
 }

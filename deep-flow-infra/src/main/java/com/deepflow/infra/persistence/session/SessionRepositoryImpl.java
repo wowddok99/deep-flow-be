@@ -119,4 +119,12 @@ public class SessionRepositoryImpl implements SessionRepository {
     public double avgContentLength(Long userId) {
         return jpaRepository.avgContentLength(userId);
     }
+
+    @Override
+    public List<Long> findOngoingUserIdsByUserIds(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
+        }
+        return jpaRepository.findOngoingUserIdsByUserIds(userIds);
+    }
 }

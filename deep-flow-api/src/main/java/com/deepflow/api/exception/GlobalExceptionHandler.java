@@ -49,6 +49,14 @@ public class GlobalExceptionHandler {
                 .body(CommonResponse.error(new ApiError("VALIDATION_ERROR", message)));
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<CommonResponse<Void>> handleIllegalArgument(IllegalArgumentException e) {
+        log.warn("잘못된 인자: {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(CommonResponse.error(new ApiError("VALIDATION_ERROR", e.getMessage())));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<CommonResponse<Void>> handleException(Exception e) {
         log.error("Unexpected error occurred", e);

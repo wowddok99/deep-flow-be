@@ -41,4 +41,7 @@ public interface SessionRepository {
     long countLogsWithTitle(Long userId);
 
     double avgContentLength(Long userId);
+
+    // --- Crew presence ---
+    List<Long> findOngoingUserIdsByUserIds(List<Long> userIds);
 }

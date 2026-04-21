@@ -59,4 +59,28 @@ public class StatsRepositoryImpl implements StatsRepository {
     public List<Object[]> findDayOfWeekStatsByUserId(Long userId) {
         return jpaRepository.findDayOfWeekStatsByUserId(userId);
     }
+
+    @Override
+    public List<Long> findUserIdsWithActivityOnDate(List<Long> userIds, LocalDate date) {
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
+        }
+        return jpaRepository.findUserIdsWithActivityOnDate(userIds, date);
+    }
+
+    @Override
+    public long sumDurationByUserIdsOnDate(List<Long> userIds, LocalDate date) {
+        if (userIds == null || userIds.isEmpty()) {
+            return 0L;
+        }
+        return jpaRepository.sumDurationByUserIdsOnDate(userIds, date);
+    }
+
+    @Override
+    public List<Object[]> findMemberRankingByUserIdsOnDate(List<Long> userIds, LocalDate date, int limit) {
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
+        }
+        return jpaRepository.findMemberRankingByUserIdsOnDate(userIds, date, org.springframework.data.domain.PageRequest.of(0, limit));
+    }
 }
