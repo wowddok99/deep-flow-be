@@ -46,4 +46,23 @@ public interface SessionRepository {
 
     // --- Crew presence ---
     List<Long> findOngoingUserIdsByUserIds(List<Long> userIds);
+
+    // --- Crew shared sessions ---
+
+    /**
+     * 크루 피드 — User + FocusLog fetch join 으로 N+1 방지.
+     * 정렬: shared_at DESC, id DESC (커서 결정성 확보).
+     */
+    SliceResult<FocusSession> findSharedByCrewWithCursorFetched(Long crewId, Long cursorId, int size);
+
+    /**
+     * 크루 피드 + 정규화된 태그로 필터.
+     */
+    SliceResult<FocusSession> findSharedByCrewAndTagWithCursorFetched(Long crewId, String normalizedTag, Long cursorId, int size);
+
+    /**
+     * 공유된 세션 상세 (User + FocusLog + Images fetch).
+     * 크루 멤버십 체크는 호출자 책임.
+     */
+    Optional<FocusSession> findSharedByIdAndCrewWithFetch(Long sessionId, Long crewId);
 }

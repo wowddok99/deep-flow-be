@@ -84,4 +84,72 @@ interface SessionJpaRepository extends JpaRepository<FocusSession, Long> {
 
     @Query("SELECT DISTINCT s.user.id FROM FocusSession s WHERE s.user.id IN :userIds AND s.status = 'ONGOING'")
     List<Long> findOngoingUserIdsByUserIds(@Param("userIds") List<Long> userIds);
+
+    // --- Crew shared sessions ---
+
+    @Query("""
+            SELECT s FROM FocusSession s
+            JOIN FETCH s.user
+            JOIN FETCH s.focusLog
+            WHERE s.sharedCrewId = :crewId
+            ORDER BY s.sharedAt DESC, s.id DESC
+            """)
+    Slice<FocusSession> findSharedByCrewWithCursor(
+            @Param("crewId") Long crewId,
+            Pageable pageable);
+
+    @Query("""
+            SELECT s FROM FocusSession s
+            JOIN FETCH s.user
+            JOIN FETCH s.focusLog
+            WHERE s.sharedCrewId = :crewId
+              AND s.id < :cursorId
+            ORDER BY s.sharedAt DESC, s.id DESC
+            """)
+    Slice<FocusSession> findSharedByCrewAfterCursor(
+            @Param("crewId") Long crewId,
+            @Param("cursorId") Long cursorId,
+            Pageable pageable);
+
+    @Query("""
+            SELECT DISTINCT s FROM FocusSession s
+            JOIN FETCH s.user
+            JOIN FETCH s.focusLog
+            JOIN com.deepflow.domain.session.tag.SessionTag st ON st.sessionId = s.id
+            WHERE s.sharedCrewId = :crewId
+              AND st.tag = :tag
+            ORDER BY s.sharedAt DESC, s.id DESC
+            """)
+    Slice<FocusSession> findSharedByCrewAndTagWithCursor(
+            @Param("crewId") Long crewId,
+            @Param("tag") String tag,
+            Pageable pageable);
+
+    @Query("""
+            SELECT DISTINCT s FROM FocusSession s
+            JOIN FETCH s.user
+            JOIN FETCH s.focusLog
+            JOIN com.deepflow.domain.session.tag.SessionTag st ON st.sessionId = s.id
+            WHERE s.sharedCrewId = :crewId
+              AND st.tag = :tag
+              AND s.id < :cursorId
+            ORDER BY s.sharedAt DESC, s.id DESC
+            """)
+    Slice<FocusSession> findSharedByCrewAndTagAfterCursor(
+            @Param("crewId") Long crewId,
+            @Param("tag") String tag,
+            @Param("cursorId") Long cursorId,
+            Pageable pageable);
+
+    @Query("""
+            SELECT s FROM FocusSession s
+            JOIN FETCH s.user
+            JOIN FETCH s.focusLog fl
+            LEFT JOIN FETCH fl.images
+            WHERE s.id = :sessionId
+              AND s.sharedCrewId = :crewId
+            """)
+    Optional<FocusSession> findSharedByIdAndCrewWithFetch(
+            @Param("sessionId") Long sessionId,
+            @Param("crewId") Long crewId);
 }

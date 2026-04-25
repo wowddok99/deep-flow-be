@@ -133,4 +133,37 @@ public class SessionRepositoryImpl implements SessionRepository {
         }
         return jpaRepository.findOngoingUserIdsByUserIds(userIds);
     }
+
+    // --- Crew shared sessions ---
+
+    @Override
+    public SliceResult<FocusSession> findSharedByCrewWithCursorFetched(Long crewId, Long cursorId, int size) {
+        Pageable pageable = PageRequest.of(0, size);
+        Slice<FocusSession> slice = (cursorId == null)
+                ? jpaRepository.findSharedByCrewWithCursor(crewId, pageable)
+                : jpaRepository.findSharedByCrewAfterCursor(crewId, cursorId, pageable);
+        return toSliceResult(slice);
+    }
+
+    @Override
+    public SliceResult<FocusSession> findSharedByCrewAndTagWithCursorFetched(Long crewId, String normalizedTag, Long cursorId, int size) {
+        Pageable pageable = PageRequest.of(0, size);
+        Slice<FocusSession> slice = (cursorId == null)
+                ? jpaRepository.findSharedByCrewAndTagWithCursor(crewId, normalizedTag, pageable)
+                : jpaRepository.findSharedByCrewAndTagAfterCursor(crewId, normalizedTag, cursorId, pageable);
+        return toSliceResult(slice);
+    }
+
+    @Override
+    public Optional<FocusSession> findSharedByIdAndCrewWithFetch(Long sessionId, Long crewId) {
+        return jpaRepository.findSharedByIdAndCrewWithFetch(sessionId, crewId);
+    }
+
+    private SliceResult<FocusSession> toSliceResult(Slice<FocusSession> slice) {
+        List<FocusSession> content = slice.getContent();
+        Long nextCursorId = slice.hasNext() && !content.isEmpty()
+                ? content.get(content.size() - 1).getId()
+                : null;
+        return new SliceResult<>(content, nextCursorId, slice.hasNext());
+    }
 }
