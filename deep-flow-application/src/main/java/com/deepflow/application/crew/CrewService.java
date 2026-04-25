@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class CrewService {
 
-    private static final int DEFAULT_MAX_MEMBERS = 20;
     private static final int MIN_MAX_MEMBERS = 2;
     private static final int HARD_LIMIT_MAX_MEMBERS = 500;
     private static final int MAX_CODE_RETRY = 5;
@@ -40,6 +39,7 @@ public class CrewService {
     private final SessionRepository sessionRepository;
     private final StatsRepository statsRepository;
     private final InviteCodeGenerator inviteCodeGenerator;
+    private final CrewJoinLocker crewJoinLocker;
 
     // ---------- 생성 ----------
 
@@ -75,11 +75,25 @@ public class CrewService {
         Map<Long, CrewRole> roleByCrew = myMemberships.stream()
                 .collect(Collectors.toMap(CrewMember::getCrewId, CrewMember::getRole));
 
+        // 모든 멤버 한 번에 로드 → crewId 별로 userId 묶기
+        List<CrewMember> allMembers = crewMemberRepository.findAllByCrewIds(crewIds);
+        Map<Long, List<Long>> userIdsByCrew = allMembers.stream()
+                .collect(Collectors.groupingBy(
+                        CrewMember::getCrewId,
+                        Collectors.mapping(CrewMember::getUserId, Collectors.toList())));
+
+        // 모든 ONGOING user 한 번에 로드 → Set 캐싱
+        List<Long> distinctMemberIds = allMembers.stream()
+                .map(CrewMember::getUserId).distinct().toList();
+        Set<Long> ongoingSet = new HashSet<>(
+                sessionRepository.findOngoingUserIdsByUserIds(distinctMemberIds));
+
         return crews.stream()
                 .sorted(Comparator.comparing(Crew::getId).reversed())
                 .map(c -> {
-                    long memberCount = crewMemberRepository.countByCrewId(c.getId());
-                    int activeNow = countActiveNowForCrew(c.getId());
+                    List<Long> members = userIdsByCrew.getOrDefault(c.getId(), List.of());
+                    long memberCount = members.size();
+                    int activeNow = (int) members.stream().filter(ongoingSet::contains).count();
                     return CrewSummaryInfo.of(c, memberCount, activeNow, roleByCrew.get(c.getId()));
                 })
                 .toList();
@@ -131,14 +145,36 @@ public class CrewService {
         String keyword = q == null ? "" : q.trim();
         SliceResult<Crew> result = crewRepository.searchPublic(keyword, cursorId, size);
 
-        Set<Long> myCrewIds = new HashSet<>(crewMemberRepository.findCrewIdsByUserId(userId));
+        if (result.content().isEmpty()) {
+            return new SliceResult<>(List.of(), result.nextCursorId(), result.hasNext());
+        }
+
+        List<Long> resultCrewIds = result.content().stream().map(Crew::getId).toList();
+
+        // 검색 결과 크루의 모든 멤버 한 번에 로드
+        List<CrewMember> allMembers = crewMemberRepository.findAllByCrewIds(resultCrewIds);
+        Map<Long, List<Long>> userIdsByCrew = allMembers.stream()
+                .collect(Collectors.groupingBy(
+                        CrewMember::getCrewId,
+                        Collectors.mapping(CrewMember::getUserId, Collectors.toList())));
+
+        // 모든 ONGOING user 한 번에 로드
+        List<Long> distinctMemberIds = allMembers.stream()
+                .map(CrewMember::getUserId).distinct().toList();
+        Set<Long> ongoingSet = new HashSet<>(
+                sessionRepository.findOngoingUserIdsByUserIds(distinctMemberIds));
+
+        // 내 역할 매핑
+        Map<Long, CrewRole> myRoleByCrew = allMembers.stream()
+                .filter(cm -> cm.getUserId().equals(userId))
+                .collect(Collectors.toMap(CrewMember::getCrewId, CrewMember::getRole));
 
         List<CrewSummaryInfo> content = result.content().stream()
                 .map(c -> {
-                    long memberCount = crewMemberRepository.countByCrewId(c.getId());
-                    int activeNow = countActiveNowForCrew(c.getId());
-                    CrewRole role = myCrewIds.contains(c.getId()) ? lookupRole(c.getId(), userId) : null;
-                    return CrewSummaryInfo.of(c, memberCount, activeNow, role);
+                    List<Long> members = userIdsByCrew.getOrDefault(c.getId(), List.of());
+                    long memberCount = members.size();
+                    int activeNow = (int) members.stream().filter(ongoingSet::contains).count();
+                    return CrewSummaryInfo.of(c, memberCount, activeNow, myRoleByCrew.get(c.getId()));
                 })
                 .toList();
 
@@ -152,18 +188,11 @@ public class CrewService {
         Crew crew = getCrew(crewId);
         if (!crew.isOwner(userId)) throw new CrewAccessDeniedException();
 
-        String name = cmd.name() != null ? normalizeName(cmd.name()) : crew.getName();
-        String description = cmd.description() != null ? normalizeDescription(cmd.description()) : crew.getDescription();
+        // PUT 시맨틱: name/visibility 는 필수, description/maxMembers 는 null = 명시적 비움/무제한.
+        String name = normalizeName(cmd.name());
+        String description = normalizeDescription(cmd.description());
         Visibility visibility = cmd.visibility() != null ? cmd.visibility() : crew.getVisibility();
-
-        Integer newMaxMembers;
-        if (cmd.maxMembers() == null) {
-            newMaxMembers = crew.getMaxMembers();
-        } else if (cmd.maxMembers() == 0) {
-            newMaxMembers = null;
-        } else {
-            newMaxMembers = normalizeMaxMembers(cmd.maxMembers());
-        }
+        Integer newMaxMembers = normalizeMaxMembers(cmd.maxMembers());
 
         long currentCount = crewMemberRepository.countByCrewId(crewId);
         if (newMaxMembers != null && currentCount > newMaxMembers) {
@@ -227,8 +256,11 @@ public class CrewService {
     }
 
     // ---------- 가입 ----------
+    //
+    // joinByCode / joinPublic 은 외부 진입점이며 @Transactional 을 두지 않는다.
+    // CrewJoinLocker.join 이 @DistributedLock 을 통해 락 안에서 REQUIRES_NEW TX 를 시작·커밋한 뒤
+    // 락을 해제하기 때문에, 여기서 외부 TX 를 열면 락 순서가 깨진다.
 
-    @Transactional
     public CrewSummaryInfo joinByCode(Long userId, String code) {
         if (code == null || code.isBlank()) throw new InvalidInviteCodeException();
 
@@ -236,17 +268,19 @@ public class CrewService {
                 .filter(c -> c.isInviteCodeValid(LocalDateTime.now()))
                 .orElseThrow(InvalidInviteCodeException::new);
 
-        return joinCrewLocked(userId, crew.getId(), false);
+        return crewJoinLocker.join(userId, crew.getId(), false);
     }
 
-    @Transactional
     public CrewSummaryInfo joinPublic(Long userId, Long crewId) {
-        return joinCrewLocked(userId, crewId, true);
+        return crewJoinLocker.join(userId, crewId, true);
     }
 
+    /**
+     * CrewJoinLocker 가 분산 락을 획득한 뒤에만 호출되는 가입 본문.
+     * 외부에서 직접 호출하지 말 것 (락 우회 위험).
+     */
     @Transactional
-    @DistributedLock(key = "'crew_join:' + #crewId")
-    public CrewSummaryInfo joinCrewLocked(Long userId, Long crewId, boolean requirePublic) {
+    public CrewSummaryInfo joinCrewLockedInternal(Long userId, Long crewId, boolean requirePublic) {
         Crew crew = getCrew(crewId);
 
         if (requirePublic && crew.getVisibility() != Visibility.PUBLIC) {
@@ -359,11 +393,12 @@ public class CrewService {
     }
 
     private Map<Long, String> loadUserNames(List<Long> userIds) {
-        Map<Long, String> map = new HashMap<>();
-        for (Long id : userIds) {
-            userRepository.findById(id).ifPresent(u -> map.put(u.getId(), u.getName()));
-        }
-        return map;
+        if (userIds == null || userIds.isEmpty()) return Map.of();
+        return userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(
+                        User::getId,
+                        User::getName,
+                        (a, b) -> a));   // 중복 키 발생 시 IllegalStateException 방지
     }
 
     private String normalizeName(String name) {
@@ -382,8 +417,12 @@ public class CrewService {
         return trimmed;
     }
 
+    /**
+     * null = 무제한 (create / update 공통). 0 sentinel 같은 마법값을 두지 않는다.
+     * 양수면 2 ~ 500 범위 검증.
+     */
     private Integer normalizeMaxMembers(Integer maxMembers) {
-        if (maxMembers == null) return DEFAULT_MAX_MEMBERS;
+        if (maxMembers == null) return null;
         if (maxMembers < MIN_MAX_MEMBERS || maxMembers > HARD_LIMIT_MAX_MEMBERS) {
             throw new IllegalArgumentException(
                     "maxMembers must be between " + MIN_MAX_MEMBERS + " and " + HARD_LIMIT_MAX_MEMBERS);

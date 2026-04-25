@@ -51,8 +51,30 @@ interface SessionJpaRepository extends JpaRepository<FocusSession, Long> {
     @Query("SELECT s FROM FocusSession s JOIN FETCH s.user JOIN FETCH s.focusLog WHERE s.status = :status AND s.deletedAt IS NULL")
     List<FocusSession> findAllByStatus(@Param("status") SessionStatus status);
 
-    @Query("SELECT s FROM FocusSession s WHERE s.user.id = :userId AND s.status = 'COMPLETED' AND s.endTime IS NOT NULL AND s.startTime >= :from")
-    List<FocusSession> findCompletedSessionsAfter(@Param("userId") Long userId, @Param("from") LocalDateTime from);
+    @Query(value = """
+            WITH RECURSIVE hours(h) AS (
+                SELECT 0 UNION ALL SELECT h+1 FROM hours WHERE h < 23
+            )
+            SELECT hours.h, COUNT(s.id)
+            FROM hours
+            LEFT JOIN focus_session s
+              ON s.user_id = :uid
+             AND s.status = 'COMPLETED'
+             AND s.deleted_at IS NULL
+             AND s.start_time >= :from
+             AND (
+                   (DATE(s.start_time) = DATE(s.end_time)
+                    AND HOUR(s.start_time) <= hours.h
+                    AND HOUR(s.end_time)   >= hours.h)
+                OR (DATE(s.start_time) <> DATE(s.end_time)
+                    AND (hours.h >= HOUR(s.start_time)
+                         OR hours.h <= HOUR(s.end_time)))
+                 )
+            GROUP BY hours.h
+            """, nativeQuery = true)
+    List<Object[]> findHourlyDistributionRaw(
+            @Param("uid") Long userId,
+            @Param("from") LocalDateTime from);
 
     @Query("SELECT COUNT(s) FROM FocusSession s WHERE s.user.id = :userId AND s.status = 'COMPLETED' AND s.focusLog.title IS NOT NULL AND s.focusLog.title <> ''")
     long countLogsWithTitle(@Param("userId") Long userId);

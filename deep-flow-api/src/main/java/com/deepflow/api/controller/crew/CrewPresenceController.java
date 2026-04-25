@@ -23,6 +23,6 @@ public class CrewPresenceController {
     @Operation(summary = "Subscribe to crew presence SSE stream")
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter stream(@AuthenticationPrincipal CustomUserDetails user) {
-        return sseEmitterManager.connect(user.getUserId());
+        return sseEmitterManager.connect(user.getUserId(), SseEmitterManager.Channel.CREW_PRESENCE);
     }
 }

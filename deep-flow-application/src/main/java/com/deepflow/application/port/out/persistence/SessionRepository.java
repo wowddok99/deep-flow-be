@@ -5,7 +5,9 @@ import com.deepflow.domain.session.FocusSession;
 import com.deepflow.domain.session.SessionStatus;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface SessionRepository {
@@ -36,7 +38,7 @@ public interface SessionRepository {
 
     List<FocusSession> findAllByStatus(SessionStatus status);
 
-    List<FocusSession> findCompletedSessionsAfter(Long userId, java.time.LocalDateTime from);
+    Map<Integer, Long> findHourlyDistribution(Long userId, LocalDateTime from);
 
     long countLogsWithTitle(Long userId);
 

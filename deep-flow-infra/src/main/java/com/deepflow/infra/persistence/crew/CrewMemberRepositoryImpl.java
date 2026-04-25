@@ -63,4 +63,10 @@ public class CrewMemberRepositoryImpl implements CrewMemberRepository {
     public List<CrewMember> findAllByCrewIdsSharedWithUser(Long userId) {
         return jpaRepository.findAllByCrewIdsSharedWithUser(userId);
     }
+
+    @Override
+    public List<CrewMember> findAllByCrewIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return jpaRepository.findAllByCrewIds(ids);
+    }
 }

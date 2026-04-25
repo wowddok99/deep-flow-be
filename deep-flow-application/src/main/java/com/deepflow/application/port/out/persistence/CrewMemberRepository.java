@@ -26,4 +26,6 @@ public interface CrewMemberRepository {
     void deleteAllByCrewId(Long crewId);
 
     List<CrewMember> findAllByCrewIdsSharedWithUser(Long userId);
+
+    List<CrewMember> findAllByCrewIds(List<Long> ids);
 }

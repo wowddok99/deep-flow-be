@@ -13,7 +13,9 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -106,8 +108,12 @@ public class SessionRepositoryImpl implements SessionRepository {
     }
 
     @Override
-    public List<FocusSession> findCompletedSessionsAfter(Long userId, LocalDateTime from) {
-        return jpaRepository.findCompletedSessionsAfter(userId, from);
+    public Map<Integer, Long> findHourlyDistribution(Long userId, LocalDateTime from) {
+        return jpaRepository.findHourlyDistributionRaw(userId, from).stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).intValue(),
+                        row -> ((Number) row[1]).longValue()
+                ));
     }
 
     @Override

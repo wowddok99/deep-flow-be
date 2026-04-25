@@ -17,8 +17,8 @@ public class SseCrewPresenceNotifier implements CrewPresenceNotifier {
     public void broadcastToUsers(List<Long> userIds, CrewPresencePayload payload) {
         if (userIds == null || userIds.isEmpty()) return;
         for (Long userId : userIds) {
-            if (sseEmitterManager.isConnected(userId)) {
-                sseEmitterManager.send(userId, "crew-presence", payload);
+            if (sseEmitterManager.isConnected(userId, SseEmitterManager.Channel.CREW_PRESENCE)) {
+                sseEmitterManager.send(userId, SseEmitterManager.Channel.CREW_PRESENCE, "crew-presence", payload);
             }
         }
     }
