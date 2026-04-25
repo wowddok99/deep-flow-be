@@ -65,4 +65,10 @@ public interface SessionRepository {
      * 크루 멤버십 체크는 호출자 책임.
      */
     Optional<FocusSession> findSharedByIdAndCrewWithFetch(Long sessionId, Long crewId);
+
+    /**
+     * 주어진 사용자 IDs 중 ONGOING 세션을 가진 사용자만 추려 세션 + User fetch.
+     * 라이브 프레즌스 스냅샷용.
+     */
+    List<FocusSession> findOngoingSessionsByUserIds(List<Long> userIds);
 }

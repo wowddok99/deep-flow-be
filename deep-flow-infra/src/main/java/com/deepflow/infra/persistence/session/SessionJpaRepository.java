@@ -152,4 +152,12 @@ interface SessionJpaRepository extends JpaRepository<FocusSession, Long> {
     Optional<FocusSession> findSharedByIdAndCrewWithFetch(
             @Param("sessionId") Long sessionId,
             @Param("crewId") Long crewId);
+
+    @Query("""
+            SELECT s FROM FocusSession s
+            JOIN FETCH s.user
+            WHERE s.user.id IN :userIds
+              AND s.status = 'ONGOING'
+            """)
+    List<FocusSession> findOngoingSessionsByUserIds(@Param("userIds") List<Long> userIds);
 }

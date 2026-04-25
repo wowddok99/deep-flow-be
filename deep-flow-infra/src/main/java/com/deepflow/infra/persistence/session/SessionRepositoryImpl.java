@@ -159,6 +159,12 @@ public class SessionRepositoryImpl implements SessionRepository {
         return jpaRepository.findSharedByIdAndCrewWithFetch(sessionId, crewId);
     }
 
+    @Override
+    public List<FocusSession> findOngoingSessionsByUserIds(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) return List.of();
+        return jpaRepository.findOngoingSessionsByUserIds(userIds);
+    }
+
     private SliceResult<FocusSession> toSliceResult(Slice<FocusSession> slice) {
         List<FocusSession> content = slice.getContent();
         Long nextCursorId = slice.hasNext() && !content.isEmpty()
