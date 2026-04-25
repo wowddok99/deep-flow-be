@@ -19,7 +19,8 @@ import java.time.LocalDateTime;
 @Table(indexes = {
         @Index(name = "idx_focus_session_user_status", columnList = "user_id, status"),
         @Index(name = "idx_focus_session_user_id_desc", columnList = "user_id, id DESC"),
-        @Index(name = "idx_focus_session_deleted_at", columnList = "deleted_at")
+        @Index(name = "idx_focus_session_deleted_at", columnList = "deleted_at"),
+        @Index(name = "idx_focus_session_shared_crew_at", columnList = "shared_crew_id, shared_at DESC")
 })
 public class FocusSession extends BaseTimeEntity {
 
@@ -45,6 +46,12 @@ public class FocusSession extends BaseTimeEntity {
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "focus_log_id")
     private FocusLog focusLog;
+
+    @Column(name = "shared_crew_id")
+    private Long sharedCrewId;
+
+    @Column(name = "shared_at")
+    private LocalDateTime sharedAt;
 
     private LocalDateTime deletedAt;
 
@@ -80,5 +87,31 @@ public class FocusSession extends BaseTimeEntity {
         }
 
         this.deletedAt = LocalDateTime.now();
+    }
+
+    public boolean isShared() {
+        return this.sharedCrewId != null;
+    }
+
+    public boolean isSharedTo(Long crewId) {
+        return crewId != null && crewId.equals(this.sharedCrewId);
+    }
+
+    public boolean isShareable() {
+        if (this.status != SessionStatus.COMPLETED) return false;
+        if (this.focusLog == null) return false;
+        String content = this.focusLog.getContent();
+        if (content == null || content.isBlank()) return false;
+        return !"{}".equals(content.trim());
+    }
+
+    public void shareTo(Long crewId, LocalDateTime now) {
+        this.sharedCrewId = crewId;
+        this.sharedAt = now;
+    }
+
+    public void unshare() {
+        this.sharedCrewId = null;
+        this.sharedAt = null;
     }
 }
