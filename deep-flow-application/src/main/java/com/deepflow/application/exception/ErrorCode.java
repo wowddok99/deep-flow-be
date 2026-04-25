@@ -10,6 +10,14 @@ public enum ErrorCode {
     // Session
     SESSION_ALREADY_EXISTS(409, "An ongoing session already exists"),
     SESSION_NOT_DELETABLE(409, "Cannot delete an ongoing session"),
+    SESSION_NOT_FOUND(404, "Session not found"),
+
+    // Crew shared sessions
+    SESSION_ALREADY_SHARED(409, "Session is already shared"),
+    SESSION_NOT_SHARED(400, "Session is not shared"),
+    SESSION_NOT_SHAREABLE(400, "Session must be COMPLETED with non-empty FocusLog content to be shared"),
+    SESSION_NOT_IN_CREW(404, "Session is not shared to this crew"),
+    TAG_LIMIT_EXCEEDED(400, "Tags must be at most 5"),
 
     // Lock
     LOCK_ACQUISITION_FAILED(409, "Another request is being processed"),
