@@ -46,6 +46,10 @@ public enum ErrorCode {
     NOTIFICATION_NOT_FOUND(404, "Notification not found"),
     NOTIFICATION_ACCESS_DENIED(403, "Notification access denied"),
 
+    // Search
+    SEARCH_QUERY_TOO_SHORT(400, "Search query must be at least 2 characters"),
+    SEARCH_TYPE_INVALID(400, "Unsupported search type"),
+
     // Rate limit
     RATE_LIMIT_EXCEEDED(429, "Too many requests"),
 

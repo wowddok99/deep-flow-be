@@ -27,6 +27,11 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  elasticsearch:
+    uris: ${ES_URIS:http://localhost:9200}
+    connection-timeout: 2s
+    socket-timeout: 5s
+
   jpa:
     properties:
       hibernate:
@@ -45,6 +50,13 @@ jwt:
   refresh-token-validity-in-seconds: 604800
 
 app:
+  search:
+    engine: ${SEARCH_ENGINE:mysql}
+  outbox:
+    worker:
+      enabled: ${OUTBOX_WORKER_ENABLED:true}
+      batch-size: 50
+      max-retry: 3
   cors:
     allowed-origins: http://localhost:3000
   auth:

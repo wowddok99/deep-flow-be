@@ -25,6 +25,19 @@ services:
     ports:
       - 6379:6379
 
+  elasticsearch:
+    build:
+      context: ./infra/docker/elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - 9200:9200
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    restart: on-failure
+
   prometheus:
     image: prom/prometheus:latest
     ports:
@@ -56,3 +69,4 @@ volumes:
   sticky_volume:
   prometheus_data:
   grafana_data:
+  es_data:

@@ -9,8 +9,11 @@ import com.deepflow.application.exception.session.TagLimitExceededException;
 import com.deepflow.application.port.out.persistence.CrewMemberRepository;
 import com.deepflow.application.port.out.persistence.SessionRepository;
 import com.deepflow.application.port.out.persistence.SessionTagRepository;
+import com.deepflow.application.session.dto.SessionSharedPayload;
+import com.deepflow.application.session.dto.SessionUnsharedPayload;
 import com.deepflow.application.session.dto.ShareSessionCommand;
 import com.deepflow.application.session.dto.SharedSessionInfo;
+import com.deepflow.domain.outbox.OutboxEventType;
 import com.deepflow.domain.session.FocusSession;
 import com.deepflow.domain.session.event.SessionSharedEvent;
 import com.deepflow.domain.session.event.SessionUnsharedEvent;
@@ -36,6 +39,7 @@ public class SessionShareService {
     private final SessionTagRepository tagRepository;
     private final TagNormalizer tagNormalizer;
     private final ApplicationEventPublisher eventPublisher;
+    private final OutboxPublisher outboxPublisher;
 
     /**
      * SessionShareLocker 를 통해서만 호출. 외부 진입 금지 (락 우회 위험).
@@ -61,6 +65,7 @@ public class SessionShareService {
         sessionRepository.save(session);
         tagRepository.replaceAll(sessionId, normalized);
 
+        outboxPublisher.publish(OutboxEventType.SESSION_SHARED, sessionId, new SessionSharedPayload(sessionId));
         eventPublisher.publishEvent(new SessionSharedEvent(sessionId, cmd.crewId(), userId, normalized));
         log.info("세션 공유: sessionId={}, crewId={}, tags={}", sessionId, cmd.crewId(), normalized);
 
@@ -80,6 +85,7 @@ public class SessionShareService {
         // 철회 시 태그 row 도 삭제. 재공유는 새 태그를 입력하는 흐름이라 이전 태그 보존은 stale.
         tagRepository.deleteAllBySessionId(sessionId);
 
+        outboxPublisher.publish(OutboxEventType.SESSION_UNSHARED, sessionId, new SessionUnsharedPayload(sessionId));
         eventPublisher.publishEvent(new SessionUnsharedEvent(sessionId, crewId, userId));
         log.info("세션 공유 철회: sessionId={}, crewId={}", sessionId, crewId);
     }
@@ -94,6 +100,7 @@ public class SessionShareService {
         List<String> normalized = normalizeTags(rawTags);
         tagRepository.replaceAll(sessionId, normalized);
 
+        outboxPublisher.publish(OutboxEventType.SESSION_TAGS_UPDATED, sessionId, new SessionSharedPayload(sessionId));
         log.info("세션 태그 갱신: sessionId={}, tags={}", sessionId, normalized);
         return SharedSessionInfo.from(session, normalized);
     }
