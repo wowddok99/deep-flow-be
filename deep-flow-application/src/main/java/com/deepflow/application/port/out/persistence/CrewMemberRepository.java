@@ -28,4 +28,9 @@ public interface CrewMemberRepository {
     List<CrewMember> findAllByCrewIdsSharedWithUser(Long userId);
 
     List<CrewMember> findAllByCrewIds(List<Long> ids);
+
+    /**
+     * 크루의 user_id Set — 멘션/알림 가드용 (멤버십 체크 빈도 높은 경로에서 batch 사용).
+     */
+    java.util.Set<Long> findUserIdsByCrewId(Long crewId);
 }

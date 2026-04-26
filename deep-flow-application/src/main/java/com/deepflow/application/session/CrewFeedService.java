@@ -4,6 +4,7 @@ import com.deepflow.application.common.SliceResult;
 import com.deepflow.application.exception.crew.NotCrewMemberException;
 import com.deepflow.application.exception.session.SessionNotInCrewException;
 import com.deepflow.application.port.out.persistence.CrewMemberRepository;
+import com.deepflow.application.port.out.persistence.SessionCommentRepository;
 import com.deepflow.application.port.out.persistence.SessionReactionRepository;
 import com.deepflow.application.port.out.persistence.SessionRepository;
 import com.deepflow.application.port.out.persistence.SessionTagRepository;
@@ -24,6 +25,7 @@ public class CrewFeedService {
     private final SessionRepository sessionRepository;
     private final SessionTagRepository tagRepository;
     private final SessionReactionRepository reactionRepository;
+    private final SessionCommentRepository commentRepository;
     private final CrewMemberRepository crewMemberRepository;
     private final TagNormalizer tagNormalizer;
 
@@ -54,13 +56,14 @@ public class CrewFeedService {
 
         Map<Long, List<String>> tagsBySession = tagRepository.findTagsBySessionIds(sessionIds);
         Map<Long, Integer> reactionCounts = reactionRepository.countBySessionIds(sessionIds);
+        Map<Long, Integer> commentCounts = commentRepository.countBySessionIds(sessionIds);
 
         List<CrewFeedItemInfo> items = slice.content().stream()
                 .map(s -> CrewFeedItemInfo.from(
                         s,
                         tagsBySession.getOrDefault(s.getId(), List.of()),
                         reactionCounts.getOrDefault(s.getId(), 0),
-                        0))
+                        commentCounts.getOrDefault(s.getId(), 0)))
                 .toList();
         return new SliceResult<>(items, slice.nextCursorId(), slice.hasNext());
     }
@@ -80,7 +83,8 @@ public class CrewFeedService {
                 .map(t -> t.getTag())
                 .toList();
         int reactionCount = reactionRepository.countBySessionIds(List.of(sessionId)).getOrDefault(sessionId, 0);
+        int commentCount = commentRepository.countBySessionIds(List.of(sessionId)).getOrDefault(sessionId, 0);
 
-        return CrewFeedItemInfo.from(session, tags, reactionCount, 0);
+        return CrewFeedItemInfo.from(session, tags, reactionCount, commentCount);
     }
 }

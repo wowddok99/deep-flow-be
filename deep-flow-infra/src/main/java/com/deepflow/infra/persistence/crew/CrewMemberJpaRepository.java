@@ -34,4 +34,7 @@ interface CrewMemberJpaRepository extends JpaRepository<CrewMember, Long> {
 
     @Query("SELECT cm FROM CrewMember cm WHERE cm.crewId IN :ids")
     List<CrewMember> findAllByCrewIds(@Param("ids") List<Long> ids);
+
+    @Query("SELECT cm.userId FROM CrewMember cm WHERE cm.crewId = :crewId")
+    List<Long> findUserIdsByCrewId(@Param("crewId") Long crewId);
 }

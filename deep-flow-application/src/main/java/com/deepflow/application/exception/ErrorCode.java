@@ -37,6 +37,15 @@ public enum ErrorCode {
     // Reactions
     INVALID_REACTION_EMOJI(400, "Unsupported reaction emoji"),
 
+    // Comments
+    COMMENT_NOT_FOUND(404, "Comment not found"),
+    COMMENT_ACCESS_DENIED(403, "Comment access denied"),
+    COMMENT_PARENT_MISMATCH(400, "Reply parent does not belong to the same session"),
+
+    // Notifications
+    NOTIFICATION_NOT_FOUND(404, "Notification not found"),
+    NOTIFICATION_ACCESS_DENIED(403, "Notification access denied"),
+
     // Rate limit
     RATE_LIMIT_EXCEEDED(429, "Too many requests"),
 

@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class SseEmitterManager {
 
-    public enum Channel { ACHIEVEMENT, CREW_PRESENCE }
+    public enum Channel { ACHIEVEMENT, CREW_PRESENCE, COMMENT_NOTIFICATION }
 
     private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
 

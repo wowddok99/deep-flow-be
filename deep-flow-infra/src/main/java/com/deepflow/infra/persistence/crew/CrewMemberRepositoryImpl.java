@@ -69,4 +69,9 @@ public class CrewMemberRepositoryImpl implements CrewMemberRepository {
         if (ids == null || ids.isEmpty()) return List.of();
         return jpaRepository.findAllByCrewIds(ids);
     }
+
+    @Override
+    public java.util.Set<Long> findUserIdsByCrewId(Long crewId) {
+        return new java.util.HashSet<>(jpaRepository.findUserIdsByCrewId(crewId));
+    }
 }
