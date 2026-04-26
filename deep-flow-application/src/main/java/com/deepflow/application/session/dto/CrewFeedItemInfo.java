@@ -40,16 +40,10 @@ public record CrewFeedItemInfo(
     }
 
     private static String buildPreview(FocusLog log) {
-        if (log == null) return null;
-        // summary 우선, 없으면 content 첫 N 자
-        if (log.getSummary() != null && !log.getSummary().isBlank()) {
-            String s = log.getSummary().trim();
-            return s.length() <= PREVIEW_MAX_LENGTH ? s : s.substring(0, PREVIEW_MAX_LENGTH);
-        }
-        String content = log.getContent();
-        if (content == null || content.isBlank() || "{}".equals(content.trim())) return null;
-        // content 가 JSON 인 경우(에디터 포맷) 그대로 자르면 깨질 수 있어 best-effort 처리.
-        String s = content.trim();
+        // FE (SessionEditorSheet/SessionDetailSheet) 가 저장 시 content 에서 평문 추출해 summary 로 보냄.
+        // BE 는 summary 만 신뢰. 비어있으면 null — content fallback 시 raw JSON 이 노출되는 문제 회피.
+        if (log == null || log.getSummary() == null || log.getSummary().isBlank()) return null;
+        String s = log.getSummary().trim();
         return s.length() <= PREVIEW_MAX_LENGTH ? s : s.substring(0, PREVIEW_MAX_LENGTH);
     }
 }
