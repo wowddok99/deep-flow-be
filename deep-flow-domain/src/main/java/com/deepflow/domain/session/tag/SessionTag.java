@@ -13,25 +13,22 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@IdClass(SessionTagId.class)
 @Table(
         name = "session_tag",
-        uniqueConstraints = {
-                @UniqueConstraint(name = "uk_session_tag", columnNames = {"session_id", "tag"})
-        },
         indexes = {
-                @Index(name = "idx_session_tag_session_id", columnList = "session_id"),
+                // PK 가 (session_id, tag) 라 session_id 단일 조회는 PK leftmost prefix 로 처리됨.
+                // tag 단일 조회 (인기 태그/자동완성/필터) 는 별도 인덱스 필요.
                 @Index(name = "idx_session_tag_tag", columnList = "tag")
         }
 )
 public class SessionTag extends BaseTimeEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
     @Column(name = "session_id", nullable = false)
     private Long sessionId;
 
+    @Id
     @Column(name = "tag", nullable = false, length = 30)
     private String tag;
 

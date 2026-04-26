@@ -1,6 +1,7 @@
 package com.deepflow.infra.persistence.session;
 
 import com.deepflow.domain.session.tag.SessionTag;
+import com.deepflow.domain.session.tag.SessionTagId;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -9,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-interface SessionTagJpaRepository extends JpaRepository<SessionTag, Long> {
+interface SessionTagJpaRepository extends JpaRepository<SessionTag, SessionTagId> {
 
     @Query("SELECT st FROM SessionTag st WHERE st.sessionId IN :sessionIds")
     List<SessionTag> findAllBySessionIds(@Param("sessionIds") List<Long> sessionIds);
@@ -30,7 +31,7 @@ interface SessionTagJpaRepository extends JpaRepository<SessionTag, Long> {
      * shared_crew_id 가 동일하고 deleted_at IS NULL 인 세션의 태그만 카운트.
      */
     @Query("""
-            SELECT st.tag AS tag, COUNT(st.id) AS cnt
+            SELECT st.tag AS tag, COUNT(st) AS cnt
             FROM SessionTag st
             JOIN FocusSession fs ON fs.id = st.sessionId
             WHERE fs.sharedCrewId = :crewId
@@ -41,7 +42,7 @@ interface SessionTagJpaRepository extends JpaRepository<SessionTag, Long> {
     List<Object[]> findPopularTagsByCrewId(@Param("crewId") Long crewId, Pageable pageable);
 
     @Query("""
-            SELECT st.tag AS tag, COUNT(st.id) AS cnt
+            SELECT st.tag AS tag, COUNT(st) AS cnt
             FROM SessionTag st
             JOIN FocusSession fs ON fs.id = st.sessionId
             WHERE fs.sharedCrewId = :crewId
@@ -58,6 +59,7 @@ interface SessionTagJpaRepository extends JpaRepository<SessionTag, Long> {
     /**
      * 사용자가 가장 최근에 공유한 세션들의 태그를 distinct 한 채로 최신순 반환.
      * 최신 공유 세션을 먼저 보고, 같은 태그가 이미 있으면 스킵하는 로직은 서비스에서 처리.
+     * tie-breaker: sharedAt 동률이면 sessionId desc → tag asc (composite PK 순서 보존).
      */
     @Query("""
             SELECT st.tag, fs.sharedAt
@@ -66,7 +68,7 @@ interface SessionTagJpaRepository extends JpaRepository<SessionTag, Long> {
             WHERE fs.user.id = :userId
               AND fs.sharedAt IS NOT NULL
               AND fs.deletedAt IS NULL
-            ORDER BY fs.sharedAt DESC, st.id DESC
+            ORDER BY fs.sharedAt DESC, st.sessionId DESC, st.tag ASC
             """)
     List<Object[]> findRecentTagsByUserId(@Param("userId") Long userId, Pageable pageable);
 }
