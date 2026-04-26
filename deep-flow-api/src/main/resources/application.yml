@@ -66,15 +66,15 @@ app:
     ttl-minutes: 60
     version: v1
   rate-limit:
-    normal-rate-limit: 100
-    penalty-rate-limit: 10
-    penalty-threshold: 50
-    bucket-expiry-minutes: 10
-    refill-period-minutes: 1
-    violation-expiry-minutes: 1
-    session-start-cost: 10
-    write-operation-cost: 5
-    read-operation-cost: 1
+    normal-rate-limit: ${APP_RATE_LIMIT_NORMAL:100}
+    penalty-rate-limit: ${APP_RATE_LIMIT_PENALTY:10}
+    penalty-threshold: ${APP_RATE_LIMIT_PENALTY_THRESHOLD:50}
+    bucket-expiry-minutes: ${APP_RATE_LIMIT_BUCKET_EXPIRY:10}
+    refill-period-minutes: ${APP_RATE_LIMIT_REFILL_PERIOD:1}
+    violation-expiry-minutes: ${APP_RATE_LIMIT_VIOLATION_EXPIRY:1}
+    session-start-cost: ${APP_RATE_LIMIT_SESSION_START_COST:10}
+    write-operation-cost: ${APP_RATE_LIMIT_WRITE_COST:5}
+    read-operation-cost: ${APP_RATE_LIMIT_READ_COST:1}
 
 management:
   endpoints:
