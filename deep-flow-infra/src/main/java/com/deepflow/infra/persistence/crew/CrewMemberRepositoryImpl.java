@@ -1,8 +1,10 @@
 package com.deepflow.infra.persistence.crew;
 
 import com.deepflow.application.port.out.persistence.CrewMemberRepository;
+import com.deepflow.application.session.dto.MemberSuggestionInfo;
 import com.deepflow.domain.crew.CrewMember;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -73,5 +75,13 @@ public class CrewMemberRepositoryImpl implements CrewMemberRepository {
     @Override
     public java.util.Set<Long> findUserIdsByCrewId(Long crewId) {
         return new java.util.HashSet<>(jpaRepository.findUserIdsByCrewId(crewId));
+    }
+
+    @Override
+    public List<MemberSuggestionInfo> suggestMembers(Long crewId, Long excludeUserId, String prefix, int limit) {
+        if (prefix == null || prefix.isBlank()) return List.of();
+        // 사용자가 입력한 '%','_','\\' 가 LIKE 와일드카드로 오동작하지 않도록 이스케이프 처리
+        String escaped = prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        return jpaRepository.suggestMembers(crewId, excludeUserId, escaped + "%", PageRequest.of(0, limit));
     }
 }

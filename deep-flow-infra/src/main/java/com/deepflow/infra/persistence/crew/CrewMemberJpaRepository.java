@@ -1,6 +1,8 @@
 package com.deepflow.infra.persistence.crew;
 
+import com.deepflow.application.session.dto.MemberSuggestionInfo;
 import com.deepflow.domain.crew.CrewMember;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -37,4 +39,24 @@ interface CrewMemberJpaRepository extends JpaRepository<CrewMember, Long> {
 
     @Query("SELECT cm.userId FROM CrewMember cm WHERE cm.crewId = :crewId")
     List<Long> findUserIdsByCrewId(@Param("crewId") Long crewId);
+
+    /**
+     * CrewMember 와 User 사이에 JPA 연관관계가 없어 theta-join 으로 묶음.
+     * username/name 둘 다 prefix 매칭. ESCAPE 절은 호출부에서 '%','_','\\' 를 이스케이프해
+     * 들어오는 값을 리터럴로 처리하기 위한 것. 정렬은 username 사전순 (스펙 §9-1).
+     */
+    @Query("""
+            SELECT new com.deepflow.application.session.dto.MemberSuggestionInfo(u.id, u.name, u.username)
+            FROM CrewMember cm, User u
+            WHERE cm.userId = u.id
+              AND cm.crewId = :crewId
+              AND cm.userId <> :excludeUserId
+              AND (u.username LIKE :prefix ESCAPE '\\' OR u.name LIKE :prefix ESCAPE '\\')
+            ORDER BY u.username ASC
+            """)
+    List<MemberSuggestionInfo> suggestMembers(
+            @Param("crewId") Long crewId,
+            @Param("excludeUserId") Long excludeUserId,
+            @Param("prefix") String prefixWithWildcard,
+            Pageable pageable);
 }
