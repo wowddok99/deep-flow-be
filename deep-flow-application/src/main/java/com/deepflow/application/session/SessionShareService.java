@@ -43,6 +43,8 @@ public class SessionShareService {
      */
     @Transactional
     public SharedSessionInfo shareLockedInternal(Long userId, Long sessionId, ShareSessionCommand cmd) {
+        // 의도적 404 (not 403) — 다른 유저 세션 존재 여부를 노출하지 않기 위함.
+        // findByIdAndUserId 가 권한+존재를 한 쿼리에 묶음. findById + if 분기로 분리하면 회귀.
         FocusSession session = sessionRepository.findByIdAndUserId(sessionId, userId)
                 .orElseThrow(SessionNotFoundException::new);
 
