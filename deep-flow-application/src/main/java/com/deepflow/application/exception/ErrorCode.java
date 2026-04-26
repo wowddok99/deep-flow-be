@@ -34,6 +34,9 @@ public enum ErrorCode {
     CREW_MAX_MEMBERS_BELOW_CURRENT(409, "Max members cannot be lower than current member count"),
     CREW_NOT_PUBLIC(403, "This crew is not publicly joinable"),
 
+    // Rate limit
+    RATE_LIMIT_EXCEEDED(429, "Too many requests"),
+
     // Common
     RESOURCE_NOT_FOUND(404, "Resource not found"),
     INTERNAL_ERROR(500, "Internal server error");

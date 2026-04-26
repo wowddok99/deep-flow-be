@@ -1,5 +1,6 @@
 package com.deepflow.api.interceptor;
 
+import com.deepflow.application.exception.ErrorCode;
 import com.deepflow.application.port.out.ratelimit.RateLimiter;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
@@ -8,7 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import com.deepflow.api.security.CustomUserDetails;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -81,9 +82,16 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     }
 
     private boolean handleRateLimitExceeded(HttpServletResponse response, long nanosToWait, String key) throws IOException {
+        // sendError() 를 쓰면 Tomcat 이 /error 로 forward → Spring Security 필터 재진입 → 401 로 변조됨.
+        // 직접 응답 작성으로 우회하면서 다른 에러 응답들과 동일한 {success,error{code,message}} 포맷 유지.
         long waitForRefill = nanosToWait / 1_000_000_000;
+        response.setStatus(ErrorCode.RATE_LIMIT_EXCEEDED.getStatus());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
         response.addHeader("X-Rate-Limit-Retry-After-Seconds", String.valueOf(waitForRefill));
-        response.sendError(HttpStatus.TOO_MANY_REQUESTS.value(), "Too many requests");
+        response.getWriter().write(
+                "{\"success\":false,\"error\":{\"code\":\"" + ErrorCode.RATE_LIMIT_EXCEEDED.name()
+                        + "\",\"message\":\"" + ErrorCode.RATE_LIMIT_EXCEEDED.getMessage() + "\"}}");
         return false;
     }
 
