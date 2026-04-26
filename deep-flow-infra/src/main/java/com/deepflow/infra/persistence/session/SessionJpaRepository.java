@@ -160,4 +160,60 @@ interface SessionJpaRepository extends JpaRepository<FocusSession, Long> {
               AND s.status = 'ONGOING'
             """)
     List<FocusSession> findOngoingSessionsByUserIds(@Param("userIds") List<Long> userIds);
+
+    // --- Crew highlight ---
+
+    @Query("""
+            SELECT COUNT(s) FROM FocusSession s
+            WHERE s.sharedCrewId = :crewId
+              AND s.deletedAt IS NULL
+              AND s.sharedAt >= :since
+            """)
+    int countSharedSince(@Param("crewId") Long crewId, @Param("since") LocalDateTime since);
+
+    @Query("""
+            SELECT s FROM FocusSession s
+            JOIN FETCH s.user
+            JOIN FETCH s.focusLog
+            LEFT JOIN com.deepflow.domain.session.reaction.SessionReaction sr ON sr.sessionId = s.id
+            WHERE s.sharedCrewId = :crewId
+              AND s.deletedAt IS NULL
+              AND s.sharedAt >= :since
+            GROUP BY s
+            ORDER BY (CAST(COUNT(sr) AS double) /
+                     GREATEST(CAST(TIMESTAMPDIFF(HOUR, s.sharedAt, CURRENT_TIMESTAMP) AS double), 1.0)) DESC,
+                     s.sharedAt DESC
+            """)
+    List<FocusSession> findHottestSharedSince(
+            @Param("crewId") Long crewId,
+            @Param("since") LocalDateTime since,
+            Pageable pageable);
+
+    @Query("""
+            SELECT s FROM FocusSession s
+            JOIN FETCH s.user
+            JOIN FETCH s.focusLog
+            WHERE s.sharedCrewId = :crewId
+              AND s.deletedAt IS NULL
+              AND s.sharedAt >= :since
+            ORDER BY s.durationSeconds DESC, s.sharedAt DESC
+            """)
+    List<FocusSession> findLongestSharedSince(
+            @Param("crewId") Long crewId,
+            @Param("since") LocalDateTime since,
+            Pageable pageable);
+
+    @Query("""
+            SELECT s FROM FocusSession s
+            JOIN FETCH s.user
+            JOIN FETCH s.focusLog
+            WHERE s.sharedCrewId = :crewId
+              AND s.deletedAt IS NULL
+              AND s.sharedAt >= :since
+            ORDER BY s.sharedAt DESC, s.id DESC
+            """)
+    List<FocusSession> findRecentSharedCards(
+            @Param("crewId") Long crewId,
+            @Param("since") LocalDateTime since,
+            Pageable pageable);
 }

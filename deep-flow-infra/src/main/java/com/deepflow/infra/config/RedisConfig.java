@@ -1,5 +1,6 @@
 package com.deepflow.infra.config;
 
+import com.deepflow.application.session.dto.CrewHighlightInfo;
 import com.deepflow.application.session.dto.SessionDetailInfo;
 import com.deepflow.application.stats.dto.HourlyDistributionInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,7 +13,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -60,9 +60,19 @@ public class RedisConfig {
                 .serializeValuesWith(SerializationPair.fromSerializer(hourlySerializer))
                 .entryTtl(Duration.ofHours(24));
 
+        Jackson2JsonRedisSerializer<CrewHighlightInfo> highlightSerializer =
+                new Jackson2JsonRedisSerializer<>(mapper, CrewHighlightInfo.class);
+
+        RedisCacheConfiguration highlightConfig = RedisCacheConfiguration.defaultCacheConfig()
+                .prefixCacheNameWith(cacheVersion + "::")
+                .serializeKeysWith(SerializationPair.fromSerializer(new StringRedisSerializer()))
+                .serializeValuesWith(SerializationPair.fromSerializer(highlightSerializer))
+                .entryTtl(Duration.ofHours(1));
+
         return RedisCacheManager.builder(connectionFactory)
                 .withCacheConfiguration("sessions", sessionConfig)
                 .withCacheConfiguration("hourlyDistribution", hourlyConfig)
+                .withCacheConfiguration("crewHighlight", highlightConfig)
                 .build();
     }
 }

@@ -71,4 +71,27 @@ public interface SessionRepository {
      * 라이브 프레즌스 스냅샷용.
      */
     List<FocusSession> findOngoingSessionsByUserIds(List<Long> userIds);
+
+    // --- Crew highlight ---
+
+    /**
+     * 크루의 최근 since 이후 공유 세션 카운트. 하이라이트 모드 결정용.
+     */
+    int countSharedSince(Long crewId, LocalDateTime since);
+
+    /**
+     * MATURE 모드 — 점수 = reactionCount / hours_since_post 가 가장 높은 세션 1개.
+     * since 이후 공유된 세션 중에서.
+     */
+    Optional<FocusSession> findHottestSharedSince(Long crewId, LocalDateTime since);
+
+    /**
+     * MATURE 모드 — durationSeconds 가 가장 큰 세션 1개. since 이후 공유.
+     */
+    Optional<FocusSession> findLongestSharedSince(Long crewId, LocalDateTime since);
+
+    /**
+     * GROWING 모드 — 최신 공유 세션 카드 N 개.
+     */
+    List<FocusSession> findRecentSharedCards(Long crewId, LocalDateTime since, int limit);
 }

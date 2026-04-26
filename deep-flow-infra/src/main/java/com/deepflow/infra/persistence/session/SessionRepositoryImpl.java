@@ -165,6 +165,30 @@ public class SessionRepositoryImpl implements SessionRepository {
         return jpaRepository.findOngoingSessionsByUserIds(userIds);
     }
 
+    // --- Crew highlight ---
+
+    @Override
+    public int countSharedSince(Long crewId, java.time.LocalDateTime since) {
+        return jpaRepository.countSharedSince(crewId, since);
+    }
+
+    @Override
+    public Optional<FocusSession> findHottestSharedSince(Long crewId, java.time.LocalDateTime since) {
+        List<FocusSession> result = jpaRepository.findHottestSharedSince(crewId, since, PageRequest.of(0, 1));
+        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
+    }
+
+    @Override
+    public Optional<FocusSession> findLongestSharedSince(Long crewId, java.time.LocalDateTime since) {
+        List<FocusSession> result = jpaRepository.findLongestSharedSince(crewId, since, PageRequest.of(0, 1));
+        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
+    }
+
+    @Override
+    public List<FocusSession> findRecentSharedCards(Long crewId, java.time.LocalDateTime since, int limit) {
+        return jpaRepository.findRecentSharedCards(crewId, since, PageRequest.of(0, limit));
+    }
+
     private SliceResult<FocusSession> toSliceResult(Slice<FocusSession> slice) {
         List<FocusSession> content = slice.getContent();
         Long nextCursorId = slice.hasNext() && !content.isEmpty()

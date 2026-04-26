@@ -20,7 +20,7 @@ public record CrewFeedItemInfo(
 ) {
     private static final int PREVIEW_MAX_LENGTH = 100;
 
-    public static CrewFeedItemInfo from(FocusSession session, List<String> tags) {
+    public static CrewFeedItemInfo from(FocusSession session, List<String> tags, int reactionCount, int commentCount) {
         FocusLog log = session.getFocusLog();
         String title = log != null ? log.getTitle() : null;
         String preview = buildPreview(log);
@@ -34,9 +34,13 @@ public record CrewFeedItemInfo(
                 session.getDurationSeconds(),
                 session.getSharedAt(),
                 tags == null ? List.of() : tags,
-                0,
-                0
+                reactionCount,
+                commentCount
         );
+    }
+
+    public static CrewFeedItemInfo from(FocusSession session, List<String> tags) {
+        return from(session, tags, 0, 0);
     }
 
     private static String buildPreview(FocusLog log) {
