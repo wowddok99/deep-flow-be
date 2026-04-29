@@ -11,6 +11,7 @@ import com.deepflow.application.port.out.persistence.SessionCommentRepository;
 import com.deepflow.application.port.out.persistence.SessionRepository;
 import com.deepflow.application.port.out.persistence.UserRepository;
 import com.deepflow.application.session.dto.CommentInfo;
+import com.deepflow.application.session.dto.CommentInfo.MentionedUser;
 import com.deepflow.application.session.dto.CreateCommentCommand;
 import com.deepflow.domain.session.FocusSession;
 import com.deepflow.domain.session.comment.CommentMention;
@@ -102,15 +103,51 @@ public class SessionCommentService {
         requireSharedSessionWithMembership(sessionId, userId);
 
         List<SessionComment> all = commentRepository.findAllBySessionIdWithUser(sessionId);
+        if (all.isEmpty()) return List.of();
 
         Map<Long, List<SessionComment>> childrenByParent = all.stream()
                 .filter(c -> c.getParentId() != null)
                 .collect(Collectors.groupingBy(SessionComment::getParentId));
 
+        Map<Long, List<MentionedUser>> mentionsByCommentId = loadMentionsByCommentId(
+                all.stream().map(SessionComment::getId).toList());
+
         return all.stream()
                 .filter(c -> c.getParentId() == null)
-                .map(c -> CommentInfo.fromTree(c, childrenByParent))
+                .map(c -> CommentInfo.fromTree(c, childrenByParent, mentionsByCommentId))
                 .toList();
+    }
+
+    /**
+     * 댓글 ID 묶음으로 멘션을 batch 조회한 뒤, 멘션된 사용자 정보(username, name)를 한 번 더
+     * batch 로 조회해 commentId → 멘션 사용자 목록 으로 묶는다.
+     * 댓글 본문에서 '@username' 매칭으로 강조 표시할 때 정확한 사용자만 chip 스타일로 렌더된다.
+     */
+    private Map<Long, List<MentionedUser>> loadMentionsByCommentId(List<Long> commentIds) {
+        if (commentIds.isEmpty()) return Map.of();
+
+        List<CommentMention> mentions = mentionRepository.findByCommentIds(commentIds);
+        if (mentions.isEmpty()) return Map.of();
+
+        List<Long> userIds = mentions.stream()
+                .map(CommentMention::getUserId)
+                .distinct()
+                .toList();
+        Map<Long, User> userById = userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        return mentions.stream()
+                .filter(m -> userById.containsKey(m.getUserId()))
+                .collect(Collectors.groupingBy(
+                        CommentMention::getCommentId,
+                        Collectors.mapping(
+                                m -> {
+                                    User u = userById.get(m.getUserId());
+                                    return new MentionedUser(u.getId(), u.getUsername(), u.getName());
+                                },
+                                Collectors.toList()
+                        )
+                ));
     }
 
     private FocusSession requireSharedSessionWithMembership(Long sessionId, Long userId) {
