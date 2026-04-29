@@ -2,6 +2,8 @@ package com.deepflow.infra.persistence.session;
 
 import com.deepflow.application.common.SliceResult;
 import com.deepflow.application.port.out.persistence.SessionRepository;
+import com.deepflow.application.port.out.persistence.SharedFocusSessionSlice;
+import com.deepflow.application.session.dto.SharedFeedCursor;
 import com.deepflow.domain.session.FocusSession;
 import com.deepflow.domain.session.SessionStatus;
 import lombok.RequiredArgsConstructor;
@@ -143,21 +145,21 @@ public class SessionRepositoryImpl implements SessionRepository {
     // --- Crew shared sessions ---
 
     @Override
-    public SliceResult<FocusSession> findSharedByCrewWithCursorFetched(Long crewId, Long cursorId, int size) {
+    public SharedFocusSessionSlice findSharedByCrewWithCursorFetched(Long crewId, SharedFeedCursor cursor, int size) {
         Pageable pageable = PageRequest.of(0, size);
-        Slice<FocusSession> slice = (cursorId == null)
+        Slice<FocusSession> slice = (cursor == null)
                 ? jpaRepository.findSharedByCrewWithCursor(crewId, pageable)
-                : jpaRepository.findSharedByCrewAfterCursor(crewId, cursorId, pageable);
-        return toSliceResult(slice);
+                : jpaRepository.findSharedByCrewAfterCursor(crewId, cursor.sharedAt(), cursor.id(), pageable);
+        return toSharedFeedSlice(slice);
     }
 
     @Override
-    public SliceResult<FocusSession> findSharedByCrewAndTagWithCursorFetched(Long crewId, String normalizedTag, Long cursorId, int size) {
+    public SharedFocusSessionSlice findSharedByCrewAndTagWithCursorFetched(Long crewId, String normalizedTag, SharedFeedCursor cursor, int size) {
         Pageable pageable = PageRequest.of(0, size);
-        Slice<FocusSession> slice = (cursorId == null)
+        Slice<FocusSession> slice = (cursor == null)
                 ? jpaRepository.findSharedByCrewAndTagWithCursor(crewId, normalizedTag, pageable)
-                : jpaRepository.findSharedByCrewAndTagAfterCursor(crewId, normalizedTag, cursorId, pageable);
-        return toSliceResult(slice);
+                : jpaRepository.findSharedByCrewAndTagAfterCursor(crewId, normalizedTag, cursor.sharedAt(), cursor.id(), pageable);
+        return toSharedFeedSlice(slice);
     }
 
     @Override
@@ -201,5 +203,15 @@ public class SessionRepositoryImpl implements SessionRepository {
                 ? content.get(content.size() - 1).getId()
                 : null;
         return new SliceResult<>(content, nextCursorId, slice.hasNext());
+    }
+
+    private SharedFocusSessionSlice toSharedFeedSlice(Slice<FocusSession> slice) {
+        List<FocusSession> content = slice.getContent();
+        boolean hasNext = slice.hasNext();
+        if (!hasNext || content.isEmpty()) {
+            return new SharedFocusSessionSlice(content, null, null, hasNext);
+        }
+        FocusSession last = content.get(content.size() - 1);
+        return new SharedFocusSessionSlice(content, last.getSharedAt(), last.getId(), true);
     }
 }

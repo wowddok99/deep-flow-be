@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
         @Index(name = "idx_focus_session_user_status", columnList = "user_id, status"),
         @Index(name = "idx_focus_session_user_id_desc", columnList = "user_id, id DESC"),
         @Index(name = "idx_focus_session_deleted_at", columnList = "deleted_at"),
-        @Index(name = "idx_focus_session_shared_crew_at", columnList = "shared_crew_id, shared_at DESC")
+        @Index(name = "idx_focus_session_shared_crew_at_id", columnList = "shared_crew_id, shared_at DESC, id DESC")
 })
 public class FocusSession extends BaseTimeEntity {
 

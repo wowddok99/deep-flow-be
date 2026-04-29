@@ -1,6 +1,7 @@
 package com.deepflow.application.port.out.persistence;
 
 import com.deepflow.application.common.SliceResult;
+import com.deepflow.application.session.dto.SharedFeedCursor;
 import com.deepflow.domain.session.FocusSession;
 import com.deepflow.domain.session.SessionStatus;
 
@@ -57,14 +58,15 @@ public interface SessionRepository {
 
     /**
      * 크루 피드 — User + FocusLog fetch join 으로 N+1 방지.
-     * 정렬: shared_at DESC, id DESC (커서 결정성 확보).
+     * 정렬: shared_at DESC, id DESC. WHERE 조건도 동일 키 (keyset pagination) 사용.
+     * cursor == null 이면 첫 페이지.
      */
-    SliceResult<FocusSession> findSharedByCrewWithCursorFetched(Long crewId, Long cursorId, int size);
+    SharedFocusSessionSlice findSharedByCrewWithCursorFetched(Long crewId, SharedFeedCursor cursor, int size);
 
     /**
-     * 크루 피드 + 정규화된 태그로 필터.
+     * 크루 피드 + 정규화된 태그 필터. cursor == null 이면 첫 페이지.
      */
-    SliceResult<FocusSession> findSharedByCrewAndTagWithCursorFetched(Long crewId, String normalizedTag, Long cursorId, int size);
+    SharedFocusSessionSlice findSharedByCrewAndTagWithCursorFetched(Long crewId, String normalizedTag, SharedFeedCursor cursor, int size);
 
     /**
      * 공유된 세션 상세 (User + FocusLog + Images fetch).

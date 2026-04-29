@@ -1,6 +1,5 @@
 package com.deepflow.application.session;
 
-import com.deepflow.application.common.SliceResult;
 import com.deepflow.application.exception.crew.NotCrewMemberException;
 import com.deepflow.application.exception.session.SessionNotInCrewException;
 import com.deepflow.application.port.out.persistence.CrewMemberRepository;
@@ -8,7 +7,10 @@ import com.deepflow.application.port.out.persistence.SessionCommentRepository;
 import com.deepflow.application.port.out.persistence.SessionReactionRepository;
 import com.deepflow.application.port.out.persistence.SessionRepository;
 import com.deepflow.application.port.out.persistence.SessionTagRepository;
+import com.deepflow.application.port.out.persistence.SharedFocusSessionSlice;
 import com.deepflow.application.session.dto.CrewFeedItemInfo;
+import com.deepflow.application.session.dto.SharedFeedCursor;
+import com.deepflow.application.session.dto.SharedFeedSlice;
 import com.deepflow.domain.session.FocusSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,26 +34,29 @@ public class CrewFeedService {
     /**
      * 크루 피드 — fetch join 으로 N+1 방지, 태그는 sessionIds 단위 batch.
      * tag 파라미터는 정규화 후 매칭 (사용자가 'JPA' 입력해도 'jpa' 로 검색).
+     * cursor 는 (sharedAt, id) 복합 커서를 인코딩한 불투명 토큰. null 또는 빈 값이면 첫 페이지.
      */
-    public SliceResult<CrewFeedItemInfo> getFeed(Long userId, Long crewId, Long cursorId, int size, String tag) {
+    public SharedFeedSlice<CrewFeedItemInfo> getFeed(Long userId, Long crewId, String cursorToken, int size, String tag) {
         if (!crewMemberRepository.existsByCrewIdAndUserId(crewId, userId)) {
             throw new NotCrewMemberException();
         }
 
-        SliceResult<FocusSession> slice;
+        SharedFeedCursor cursor = SharedFeedCursor.decode(cursorToken);
+
+        SharedFocusSessionSlice slice;
         if (tag == null || tag.isBlank()) {
-            slice = sessionRepository.findSharedByCrewWithCursorFetched(crewId, cursorId, size);
+            slice = sessionRepository.findSharedByCrewWithCursorFetched(crewId, cursor, size);
         } else {
             String normalized = tagNormalizer.normalize(tag);
             if (normalized.isBlank()) {
-                return new SliceResult<>(List.of(), null, false);
+                return new SharedFeedSlice<>(List.of(), null, false);
             }
-            slice = sessionRepository.findSharedByCrewAndTagWithCursorFetched(crewId, normalized, cursorId, size);
+            slice = sessionRepository.findSharedByCrewAndTagWithCursorFetched(crewId, normalized, cursor, size);
         }
 
         List<Long> sessionIds = slice.content().stream().map(FocusSession::getId).toList();
         if (sessionIds.isEmpty()) {
-            return new SliceResult<>(List.of(), slice.nextCursorId(), slice.hasNext());
+            return new SharedFeedSlice<>(List.of(), null, slice.hasNext());
         }
 
         Map<Long, List<String>> tagsBySession = tagRepository.findTagsBySessionIds(sessionIds);
@@ -65,7 +70,12 @@ public class CrewFeedService {
                         reactionCounts.getOrDefault(s.getId(), 0),
                         commentCounts.getOrDefault(s.getId(), 0)))
                 .toList();
-        return new SliceResult<>(items, slice.nextCursorId(), slice.hasNext());
+
+        String nextCursor = slice.hasNext()
+                ? new SharedFeedCursor(slice.nextSharedAt(), slice.nextId()).encode()
+                : null;
+
+        return new SharedFeedSlice<>(items, nextCursor, slice.hasNext());
     }
 
     /**

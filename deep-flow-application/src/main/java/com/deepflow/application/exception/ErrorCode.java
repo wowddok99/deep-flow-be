@@ -50,6 +50,9 @@ public enum ErrorCode {
     SEARCH_QUERY_TOO_SHORT(400, "Search query must be at least 2 characters"),
     SEARCH_TYPE_INVALID(400, "Unsupported search type"),
 
+    // Pagination
+    INVALID_CURSOR(400, "Invalid cursor token"),
+
     // Rate limit
     RATE_LIMIT_EXCEEDED(429, "Too many requests"),
 

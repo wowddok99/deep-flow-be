@@ -103,11 +103,13 @@ interface SessionJpaRepository extends JpaRepository<FocusSession, Long> {
             JOIN FETCH s.user
             JOIN FETCH s.focusLog
             WHERE s.sharedCrewId = :crewId
-              AND s.id < :cursorId
+              AND (s.sharedAt < :cursorSharedAt
+                   OR (s.sharedAt = :cursorSharedAt AND s.id < :cursorId))
             ORDER BY s.sharedAt DESC, s.id DESC
             """)
     Slice<FocusSession> findSharedByCrewAfterCursor(
             @Param("crewId") Long crewId,
+            @Param("cursorSharedAt") LocalDateTime cursorSharedAt,
             @Param("cursorId") Long cursorId,
             Pageable pageable);
 
@@ -132,12 +134,14 @@ interface SessionJpaRepository extends JpaRepository<FocusSession, Long> {
             JOIN com.deepflow.domain.session.tag.SessionTag st ON st.sessionId = s.id
             WHERE s.sharedCrewId = :crewId
               AND st.tag = :tag
-              AND s.id < :cursorId
+              AND (s.sharedAt < :cursorSharedAt
+                   OR (s.sharedAt = :cursorSharedAt AND s.id < :cursorId))
             ORDER BY s.sharedAt DESC, s.id DESC
             """)
     Slice<FocusSession> findSharedByCrewAndTagAfterCursor(
             @Param("crewId") Long crewId,
             @Param("tag") String tag,
+            @Param("cursorSharedAt") LocalDateTime cursorSharedAt,
             @Param("cursorId") Long cursorId,
             Pageable pageable);
 
