@@ -34,6 +34,12 @@ public class SessionRepositoryImpl implements SessionRepository {
     }
 
     @Override
+    public List<FocusSession> findAllByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return jpaRepository.findAllById(ids);
+    }
+
+    @Override
     public Optional<FocusSession> findByIdAndUserId(Long id, Long userId) {
         return jpaRepository.findByIdAndUserId(id, userId);
     }

@@ -16,7 +16,8 @@ public record CrewFeedItemInfo(
         LocalDateTime sharedAt,
         List<String> tags,
         int reactionCount,
-        int commentCount
+        int commentCount,
+        boolean edited
 ) {
     private static final int PREVIEW_MAX_LENGTH = 100;
 
@@ -35,12 +36,25 @@ public record CrewFeedItemInfo(
                 session.getSharedAt(),
                 tags == null ? List.of() : tags,
                 reactionCount,
-                commentCount
+                commentCount,
+                computeEdited(session)
         );
     }
 
     public static CrewFeedItemInfo from(FocusSession session, List<String> tags) {
         return from(session, tags, 0, 0);
+    }
+
+    /**
+     * "공유 후 본문 수정된 경우" 만 신호.
+     * - 공유 전 수정: 독자가 본 적 없음 → 표시 X
+     * - 공유 후 수정: 독자가 본 본문이 바뀜 → 표시 O
+     * Slack/Discord 메시지의 "(편집됨)" 정의와 동일.
+     */
+    private static boolean computeEdited(FocusSession session) {
+        return session.getUpdatedAt() != null
+                && session.getSharedAt() != null
+                && session.getUpdatedAt().isAfter(session.getSharedAt());
     }
 
     private static String buildPreview(FocusLog log) {

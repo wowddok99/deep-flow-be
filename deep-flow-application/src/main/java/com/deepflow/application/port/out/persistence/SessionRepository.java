@@ -16,6 +16,12 @@ public interface SessionRepository {
 
     Optional<FocusSession> findById(Long id);
 
+    /**
+     * 세션 ID 목록으로 batch 조회. 알림 deep link 매핑 등에서 sharedCrewId 만 빠르게 가져올 때 사용.
+     * fetch join 없음 — sharedCrewId/sharedAt 만 필요한 경우 가벼운 호출.
+     */
+    List<FocusSession> findAllByIds(List<Long> ids);
+
     boolean existsByUserIdAndStatus(Long userId, SessionStatus status);
 
     Optional<FocusSession> findByIdAndUserId(Long id, Long userId);

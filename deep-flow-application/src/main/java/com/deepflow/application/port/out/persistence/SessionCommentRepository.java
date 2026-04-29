@@ -18,6 +18,12 @@ public interface SessionCommentRepository {
     List<SessionComment> findAllBySessionIdWithUser(Long sessionId);
 
     /**
+     * 댓글 ID 목록으로 batch 조회 (User fetch join).
+     * 알림 deep link 매핑용 — mention.commentId → comment.user/content/sessionId 풀어내기.
+     */
+    List<SessionComment> findAllByIdsWithUser(List<Long> ids);
+
+    /**
      * 피드 batch 카운트. soft-deleted 제외.
      */
     Map<Long, Integer> countBySessionIds(List<Long> sessionIds);

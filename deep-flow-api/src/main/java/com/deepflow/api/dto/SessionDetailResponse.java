@@ -28,14 +28,19 @@ public record SessionDetailResponse(
     @Schema(description = "Log summary", example = "Studied JPA and Spring Security")
     String summary,
     @Schema(description = "Attached image URLs")
-    List<String> imageUrls
+    List<String> imageUrls,
+    @Schema(description = "Crew this session is shared to (null if not shared)", example = "5")
+    Long sharedCrewId,
+    @Schema(description = "When this session was shared (null if not shared)")
+    LocalDateTime sharedAt
 ) {
     public static SessionDetailResponse from(SessionDetailInfo info, JsonNode contentNode) {
         return new SessionDetailResponse(
             info.id(), info.startTime(), info.endTime(),
             info.durationSeconds(), info.status(),
             contentNode, info.title(), info.summary(),
-            info.imageUrls()
+            info.imageUrls(),
+            info.sharedCrewId(), info.sharedAt()
         );
     }
 }

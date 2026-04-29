@@ -32,6 +32,12 @@ public class SessionCommentRepositoryImpl implements SessionCommentRepository {
     }
 
     @Override
+    public List<SessionComment> findAllByIdsWithUser(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return jpa.findAllByIdsWithUser(ids);
+    }
+
+    @Override
     public Map<Long, Integer> countBySessionIds(List<Long> sessionIds) {
         if (sessionIds == null || sessionIds.isEmpty()) return Map.of();
         Map<Long, Integer> result = new HashMap<>();

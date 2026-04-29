@@ -14,7 +14,8 @@ public record CrewFeedItemResponse(
         LocalDateTime sharedAt,
         List<String> tags,
         int reactionCount,
-        int commentCount
+        int commentCount,
+        boolean edited
 ) {
     public static CrewFeedItemResponse from(CrewFeedItemInfo info) {
         return new CrewFeedItemResponse(
@@ -26,7 +27,8 @@ public record CrewFeedItemResponse(
                 info.sharedAt(),
                 info.tags(),
                 info.reactionCount(),
-                info.commentCount()
+                info.commentCount(),
+                info.edited()
         );
     }
 
