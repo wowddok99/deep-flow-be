@@ -9,6 +9,7 @@ import com.deepflow.application.port.out.persistence.SessionRepository;
 import com.deepflow.application.port.out.persistence.SessionTagRepository;
 import com.deepflow.application.port.out.persistence.SharedFocusSessionSlice;
 import com.deepflow.application.session.dto.CrewFeedItemInfo;
+import com.deepflow.application.session.dto.CrewSessionDetailInfo;
 import com.deepflow.application.session.dto.SharedFeedCursor;
 import com.deepflow.application.session.dto.SharedFeedSlice;
 import com.deepflow.domain.session.FocusSession;
@@ -80,8 +81,9 @@ public class CrewFeedService {
 
     /**
      * 공유 세션 단건 상세 — 크루 멤버이고, 해당 크루로 공유된 세션이어야 함.
+     * 본문(content) 포함. 크루 멤버이면 풀 본문을 볼 수 있다는 정책.
      */
-    public CrewFeedItemInfo getSharedSession(Long userId, Long crewId, Long sessionId) {
+    public CrewSessionDetailInfo getSharedSession(Long userId, Long crewId, Long sessionId) {
         if (!crewMemberRepository.existsByCrewIdAndUserId(crewId, userId)) {
             throw new NotCrewMemberException();
         }
@@ -95,6 +97,6 @@ public class CrewFeedService {
         int reactionCount = reactionRepository.countBySessionIds(List.of(sessionId)).getOrDefault(sessionId, 0);
         int commentCount = commentRepository.countBySessionIds(List.of(sessionId)).getOrDefault(sessionId, 0);
 
-        return CrewFeedItemInfo.from(session, tags, reactionCount, commentCount);
+        return CrewSessionDetailInfo.from(session, tags, reactionCount, commentCount);
     }
 }

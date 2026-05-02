@@ -19,6 +19,7 @@ import com.deepflow.domain.session.event.SessionSharedEvent;
 import com.deepflow.domain.session.event.SessionUnsharedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +46,7 @@ public class SessionShareService {
      * SessionShareLocker 를 통해서만 호출. 외부 진입 금지 (락 우회 위험).
      * 분산 락 안에서 REQUIRES_NEW TX 가 시작/커밋된다.
      */
+    @CacheEvict(value = "sessions", key = "#sessionId", beforeInvocation = true)
     @Transactional
     public SharedSessionInfo shareLockedInternal(Long userId, Long sessionId, ShareSessionCommand cmd) {
         // 의도적 404 (not 403) — 다른 유저 세션 존재 여부를 노출하지 않기 위함.
@@ -72,6 +74,7 @@ public class SessionShareService {
         return SharedSessionInfo.from(session, normalized);
     }
 
+    @CacheEvict(value = "sessions", key = "#sessionId", beforeInvocation = true)
     @Transactional
     public void unshareLockedInternal(Long userId, Long sessionId) {
         FocusSession session = sessionRepository.findByIdAndUserId(sessionId, userId)

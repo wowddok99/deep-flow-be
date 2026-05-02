@@ -3,9 +3,12 @@ package com.deepflow.api.controller.crew;
 import com.deepflow.api.dto.CommonResponse;
 import com.deepflow.api.dto.CursorTokenResponse;
 import com.deepflow.api.dto.session.CrewFeedItemResponse;
+import com.deepflow.api.dto.session.CrewSessionDetailResponse;
+import com.deepflow.api.mapper.SessionResponseMapper;
 import com.deepflow.api.security.CustomUserDetails;
 import com.deepflow.application.session.CrewFeedService;
 import com.deepflow.application.session.dto.CrewFeedItemInfo;
+import com.deepflow.application.session.dto.CrewSessionDetailInfo;
 import com.deepflow.application.session.dto.SharedFeedSlice;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +30,7 @@ import java.util.List;
 public class CrewFeedController {
 
     private final CrewFeedService crewFeedService;
+    private final SessionResponseMapper sessionResponseMapper;
 
     @Operation(summary = "List shared sessions in a crew (cursor pagination)")
     @GetMapping("/feed")
@@ -45,12 +49,12 @@ public class CrewFeedController {
 
     @Operation(summary = "Get a shared session detail in a crew")
     @GetMapping("/sessions/{sessionId}")
-    public ResponseEntity<CommonResponse<CrewFeedItemResponse>> getSharedSession(
+    public ResponseEntity<CommonResponse<CrewSessionDetailResponse>> getSharedSession(
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable @Min(1) Long crewId,
             @PathVariable @Min(1) Long sessionId
     ) {
-        CrewFeedItemInfo info = crewFeedService.getSharedSession(user.getUserId(), crewId, sessionId);
-        return ResponseEntity.ok(CommonResponse.ok(CrewFeedItemResponse.from(info)));
+        CrewSessionDetailInfo info = crewFeedService.getSharedSession(user.getUserId(), crewId, sessionId);
+        return ResponseEntity.ok(CommonResponse.ok(sessionResponseMapper.toCrewDetailResponse(info)));
     }
 }
