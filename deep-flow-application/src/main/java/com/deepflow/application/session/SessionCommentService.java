@@ -107,6 +107,7 @@ public class SessionCommentService {
 
         Map<Long, List<SessionComment>> childrenByParent = all.stream()
                 .filter(c -> c.getParentId() != null)
+                .filter(c -> !c.isDeleted())
                 .collect(Collectors.groupingBy(SessionComment::getParentId));
 
         Map<Long, List<MentionedUser>> mentionsByCommentId = loadMentionsByCommentId(
@@ -115,6 +116,7 @@ public class SessionCommentService {
         return all.stream()
                 .filter(c -> c.getParentId() == null)
                 .map(c -> CommentInfo.fromTree(c, childrenByParent, mentionsByCommentId))
+                .filter(info -> !(info.deleted() && info.replies().isEmpty()))
                 .toList();
     }
 
