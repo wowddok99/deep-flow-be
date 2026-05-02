@@ -35,5 +35,10 @@ public interface SessionReactionRepository {
      */
     List<ReactionEmoji> findReactedEmojisByUser(Long sessionId, Long userId);
 
+    /**
+     * 세션의 모든 리액션을 createdAt 오름차순으로. emoji 별 reactor 집계용.
+     */
+    List<SessionReaction> findAllBySession(Long sessionId);
+
     record EmojiCount(ReactionEmoji emoji, int count) {}
 }

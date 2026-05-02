@@ -8,6 +8,12 @@ public record ReactionAggregateInfo(
     public record EmojiCountInfo(
             String emoji,
             int count,
-            boolean userReacted
+            boolean userReacted,
+            List<ReactorSummary> topReactors
+    ) {}
+
+    public record ReactorSummary(
+            Long userId,
+            String name
     ) {}
 }

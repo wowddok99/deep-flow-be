@@ -58,4 +58,9 @@ public class SessionReactionRepositoryImpl implements SessionReactionRepository 
     public List<ReactionEmoji> findReactedEmojisByUser(Long sessionId, Long userId) {
         return jpa.findEmojisBySessionIdAndUserId(sessionId, userId);
     }
+
+    @Override
+    public List<SessionReaction> findAllBySession(Long sessionId) {
+        return jpa.findBySessionIdOrderByCreatedAtAsc(sessionId);
+    }
 }

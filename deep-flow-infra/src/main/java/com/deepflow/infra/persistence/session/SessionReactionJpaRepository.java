@@ -34,4 +34,6 @@ interface SessionReactionJpaRepository extends JpaRepository<SessionReaction, Lo
     @Query("SELECT sr.emoji FROM SessionReaction sr WHERE sr.sessionId = :sessionId AND sr.userId = :userId")
     List<ReactionEmoji> findEmojisBySessionIdAndUserId(@Param("sessionId") Long sessionId,
                                                       @Param("userId") Long userId);
+
+    List<SessionReaction> findBySessionIdOrderByCreatedAtAsc(Long sessionId);
 }

@@ -6,24 +6,30 @@ import com.deepflow.application.exception.session.SessionNotFoundException;
 import com.deepflow.application.port.out.persistence.CrewMemberRepository;
 import com.deepflow.application.port.out.persistence.SessionReactionRepository;
 import com.deepflow.application.port.out.persistence.SessionRepository;
+import com.deepflow.application.port.out.persistence.UserRepository;
 import com.deepflow.application.session.dto.ReactionAggregateInfo;
+import com.deepflow.application.session.dto.ReactionAggregateInfo.EmojiCountInfo;
+import com.deepflow.application.session.dto.ReactionAggregateInfo.ReactorSummary;
 import com.deepflow.application.session.dto.ReactionToggleResult;
 import com.deepflow.domain.session.FocusSession;
 import com.deepflow.domain.session.event.SessionReactionAddedEvent;
 import com.deepflow.domain.session.event.SessionReactionRemovedEvent;
 import com.deepflow.domain.session.reaction.ReactionEmoji;
 import com.deepflow.domain.session.reaction.SessionReaction;
+import com.deepflow.domain.user.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -31,9 +37,12 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class SessionReactionService {
 
+    private static final int TOP_REACTORS_LIMIT = 5;
+
     private final SessionRepository sessionRepository;
     private final SessionReactionRepository reactionRepository;
     private final CrewMemberRepository crewMemberRepository;
+    private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -63,21 +72,47 @@ public class SessionReactionService {
     }
 
     public ReactionAggregateInfo aggregate(Long userId, Long sessionId) {
-        FocusSession session = requireSharedSessionWithMembership(sessionId, userId);
+        requireSharedSessionWithMembership(sessionId, userId);
 
-        Map<ReactionEmoji, Integer> counts = new EnumMap<>(ReactionEmoji.class);
-        for (SessionReactionRepository.EmojiCount ec : reactionRepository.aggregateBySession(sessionId)) {
-            counts.put(ec.emoji(), ec.count());
-        }
-        Set<ReactionEmoji> userReacted = Set.copyOf(reactionRepository.findReactedEmojisByUser(sessionId, userId));
+        List<SessionReaction> reactions = reactionRepository.findAllBySession(sessionId);
+        Map<Long, User> userById = loadReactorUsers(reactions);
 
-        List<ReactionAggregateInfo.EmojiCountInfo> items = java.util.Arrays.stream(ReactionEmoji.values())
-                .map(e -> new ReactionAggregateInfo.EmojiCountInfo(
-                        e.unicode(),
-                        counts.getOrDefault(e, 0),
-                        userReacted.contains(e)))
+        Map<ReactionEmoji, List<SessionReaction>> groupedByEmoji = reactions.stream()
+                .collect(Collectors.groupingBy(SessionReaction::getEmoji));
+
+        List<EmojiCountInfo> items = Arrays.stream(ReactionEmoji.values())
+                .map(emoji -> buildItem(emoji, groupedByEmoji.getOrDefault(emoji, List.of()), userById, userId))
                 .toList();
+
         return new ReactionAggregateInfo(items);
+    }
+
+    private EmojiCountInfo buildItem(ReactionEmoji emoji,
+                                     List<SessionReaction> reactionsForEmoji,
+                                     Map<Long, User> userById,
+                                     Long viewerUserId) {
+        boolean userReacted = reactionsForEmoji.stream()
+                .anyMatch(r -> r.getUserId().equals(viewerUserId));
+
+        List<ReactorSummary> topReactors = new ArrayList<>(TOP_REACTORS_LIMIT);
+        for (SessionReaction r : reactionsForEmoji) {
+            if (topReactors.size() >= TOP_REACTORS_LIMIT) break;
+            User u = userById.get(r.getUserId());
+            if (u == null) continue;
+            topReactors.add(new ReactorSummary(u.getId(), u.getName()));
+        }
+
+        return new EmojiCountInfo(emoji.unicode(), reactionsForEmoji.size(), userReacted, topReactors);
+    }
+
+    private Map<Long, User> loadReactorUsers(List<SessionReaction> reactions) {
+        if (reactions.isEmpty()) return Map.of();
+        List<Long> userIds = reactions.stream()
+                .map(SessionReaction::getUserId)
+                .distinct()
+                .toList();
+        return userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
     }
 
     private FocusSession requireSharedSessionWithMembership(Long sessionId, Long userId) {
