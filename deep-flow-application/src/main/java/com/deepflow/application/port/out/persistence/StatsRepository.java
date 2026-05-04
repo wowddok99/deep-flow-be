@@ -25,4 +25,11 @@ public interface StatsRepository {
     List<LocalDate> findAllDatesByUserId(Long userId);
 
     List<Object[]> findDayOfWeekStatsByUserId(Long userId);
+
+    // --- Crew activity ---
+    List<Long> findUserIdsWithActivityOnDate(List<Long> userIds, LocalDate date);
+
+    long sumDurationByUserIdsOnDate(List<Long> userIds, LocalDate date);
+
+    List<Object[]> findMemberRankingByUserIdsOnDate(List<Long> userIds, LocalDate date, int limit);
 }

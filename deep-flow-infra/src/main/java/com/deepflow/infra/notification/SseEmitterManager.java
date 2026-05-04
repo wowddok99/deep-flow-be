@@ -8,18 +8,30 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** userId별 SseEmitter 생명주기 관리 (연결, 전송, 정리) */
+/**
+ * (userId, channel) 별 SseEmitter 생명주기 관리.
+ * 같은 사용자가 여러 SSE 채널(achievement / crew presence) 을 동시에 유지할 수 있도록
+ * 키를 채널별로 분리한다.
+ */
 @Slf4j
 @Component
 public class SseEmitterManager {
 
-    private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
+    public enum Channel { ACHIEVEMENT, CREW_PRESENCE, COMMENT_NOTIFICATION }
+
+    private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
 
     private static final long SSE_TIMEOUT = 30 * 60 * 1000L; // 30분
 
-    public SseEmitter connect(Long userId) {
-        // 기존 연결이 있으면 닫고 교체 (한 유저당 하나만 유지)
-        SseEmitter existing = emitters.remove(userId);
+    private String key(Long userId, Channel channel) {
+        return userId + ":" + channel.name();
+    }
+
+    public SseEmitter connect(Long userId, Channel channel) {
+        String compositeKey = key(userId, channel);
+
+        // 같은 (userId, channel) 의 기존 연결만 닫는다 — 다른 채널은 영향 없음
+        SseEmitter existing = emitters.remove(compositeKey);
         if (existing != null) {
             existing.complete();
         }
@@ -27,34 +39,35 @@ public class SseEmitterManager {
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
 
         emitter.onCompletion(() -> {
-            emitters.remove(userId);
-            log.debug("SSE completed: userId={}", userId);
+            emitters.remove(compositeKey);
+            log.debug("SSE completed: key={}", compositeKey);
         });
         emitter.onTimeout(() -> {
-            emitters.remove(userId);
-            log.debug("SSE timeout: userId={}", userId);
+            emitters.remove(compositeKey);
+            log.debug("SSE timeout: key={}", compositeKey);
         });
         emitter.onError(e -> {
-            emitters.remove(userId);
-            log.debug("SSE error: userId={}", userId);
+            emitters.remove(compositeKey);
+            log.debug("SSE error: key={}", compositeKey);
         });
 
-        emitters.put(userId, emitter);
+        emitters.put(compositeKey, emitter);
 
         try {
             emitter.send(SseEmitter.event()
                     .name("connect")
                     .data("connected"));
         } catch (IOException e) {
-            emitters.remove(userId);
+            emitters.remove(compositeKey);
         }
 
-        log.info("SSE connected: userId={}", userId);
+        log.info("SSE connected: key={}", compositeKey);
         return emitter;
     }
 
-    public void send(Long userId, String eventName, Object data) {
-        SseEmitter emitter = emitters.get(userId);
+    public void send(Long userId, Channel channel, String eventName, Object data) {
+        String compositeKey = key(userId, channel);
+        SseEmitter emitter = emitters.get(compositeKey);
         if (emitter == null) return;
 
         try {
@@ -62,12 +75,12 @@ public class SseEmitterManager {
                     .name(eventName)
                     .data(data));
         } catch (IOException e) {
-            emitters.remove(userId);
-            log.warn("SSE send failed, removed: userId={}", userId);
+            emitters.remove(compositeKey);
+            log.warn("SSE send failed, removed: key={}", compositeKey);
         }
     }
 
-    public boolean isConnected(Long userId) {
-        return emitters.containsKey(userId);
+    public boolean isConnected(Long userId, Channel channel) {
+        return emitters.containsKey(key(userId, channel));
     }
 }

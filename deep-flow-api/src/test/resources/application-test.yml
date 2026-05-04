@@ -21,6 +21,12 @@ app:
       secure: false
       same-site: Lax
       max-age: 604800
+  rate-limit:
+    # 통합 테스트는 rate-limit 의 영향을 받지 않도록 사실상 무제한
+    normal-rate-limit: 100000
+    write-operation-cost: 1
+    session-start-cost: 1
+    read-operation-cost: 1
   r2:
     endpoint: http://localhost:9000
     access-key: test

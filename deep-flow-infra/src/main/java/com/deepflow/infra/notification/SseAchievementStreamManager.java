@@ -13,6 +13,6 @@ public class SseAchievementStreamManager implements AchievementStreamManager {
 
     @Override
     public Object connect(Long userId) {
-        return sseEmitterManager.connect(userId);
+        return sseEmitterManager.connect(userId, SseEmitterManager.Channel.ACHIEVEMENT);
     }
 }

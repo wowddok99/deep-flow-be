@@ -16,7 +16,9 @@ public record SessionDetailInfo(
     String title,
     String content,
     String summary,
-    List<String> imageUrls
+    List<String> imageUrls,
+    Long sharedCrewId,
+    LocalDateTime sharedAt
 ) {
     public static SessionDetailInfo from(FocusSession session) {
         FocusLog log = session.getFocusLog();
@@ -33,7 +35,9 @@ public record SessionDetailInfo(
             log.getTitle(),
             log.getContent(),
             log.getSummary(),
-            urls
+            urls,
+            session.getSharedCrewId(),
+            session.getSharedAt()
         );
     }
 }

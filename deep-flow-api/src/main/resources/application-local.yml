@@ -26,6 +26,12 @@ app:
     cookie:
       secure: false
       same-site: Lax
+  rate-limit:
+    # local 개발 / E2E 시 rate-limit 으로 막히지 않도록 사실상 무제한 처리
+    normal-rate-limit: 100000
+    write-operation-cost: 1
+    session-start-cost: 1
+    read-operation-cost: 1
   r2:
     endpoint: https://e88d07b01b24fe0128c47001d7db0076.r2.cloudflarestorage.com
     access-key: ${R2_ACCESS_KEY}

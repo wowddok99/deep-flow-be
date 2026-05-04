@@ -1,0 +1,8 @@
+package com.deepflow.application.port.out.notification;
+
+import com.deepflow.application.session.dto.CommentNotificationPayload;
+
+public interface CommentNotificationNotifier {
+
+    void notifyTo(Long userId, CommentNotificationPayload payload);
+}

@@ -2,6 +2,8 @@ package com.deepflow.infra.persistence.session;
 
 import com.deepflow.application.common.SliceResult;
 import com.deepflow.application.port.out.persistence.SessionRepository;
+import com.deepflow.application.port.out.persistence.SharedFocusSessionSlice;
+import com.deepflow.application.session.dto.SharedFeedCursor;
 import com.deepflow.domain.session.FocusSession;
 import com.deepflow.domain.session.SessionStatus;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +15,9 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -29,6 +33,12 @@ public class SessionRepositoryImpl implements SessionRepository {
     @Override
     public boolean existsByUserIdAndStatus(Long userId, SessionStatus status) {
         return jpaRepository.existsByUserIdAndStatus(userId, status);
+    }
+
+    @Override
+    public List<FocusSession> findAllByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return jpaRepository.findAllById(ids);
     }
 
     @Override
@@ -106,8 +116,12 @@ public class SessionRepositoryImpl implements SessionRepository {
     }
 
     @Override
-    public List<FocusSession> findCompletedSessionsAfter(Long userId, LocalDateTime from) {
-        return jpaRepository.findCompletedSessionsAfter(userId, from);
+    public Map<Integer, Long> findHourlyDistribution(Long userId, LocalDateTime from) {
+        return jpaRepository.findHourlyDistributionRaw(userId, from).stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).intValue(),
+                        row -> ((Number) row[1]).longValue()
+                ));
     }
 
     @Override
@@ -118,5 +132,86 @@ public class SessionRepositoryImpl implements SessionRepository {
     @Override
     public double avgContentLength(Long userId) {
         return jpaRepository.avgContentLength(userId);
+    }
+
+    @Override
+    public List<Long> findOngoingUserIdsByUserIds(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
+        }
+        return jpaRepository.findOngoingUserIdsByUserIds(userIds);
+    }
+
+    // --- Crew shared sessions ---
+
+    @Override
+    public SharedFocusSessionSlice findSharedByCrewWithCursorFetched(Long crewId, SharedFeedCursor cursor, int size) {
+        Pageable pageable = PageRequest.of(0, size);
+        Slice<FocusSession> slice = (cursor == null)
+                ? jpaRepository.findSharedByCrewWithCursor(crewId, pageable)
+                : jpaRepository.findSharedByCrewAfterCursor(crewId, cursor.sharedAt(), cursor.id(), pageable);
+        return toSharedFeedSlice(slice);
+    }
+
+    @Override
+    public SharedFocusSessionSlice findSharedByCrewAndTagWithCursorFetched(Long crewId, String normalizedTag, SharedFeedCursor cursor, int size) {
+        Pageable pageable = PageRequest.of(0, size);
+        Slice<FocusSession> slice = (cursor == null)
+                ? jpaRepository.findSharedByCrewAndTagWithCursor(crewId, normalizedTag, pageable)
+                : jpaRepository.findSharedByCrewAndTagAfterCursor(crewId, normalizedTag, cursor.sharedAt(), cursor.id(), pageable);
+        return toSharedFeedSlice(slice);
+    }
+
+    @Override
+    public Optional<FocusSession> findSharedByIdAndCrewWithFetch(Long sessionId, Long crewId) {
+        return jpaRepository.findSharedByIdAndCrewWithFetch(sessionId, crewId);
+    }
+
+    @Override
+    public List<FocusSession> findOngoingSessionsByUserIds(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) return List.of();
+        return jpaRepository.findOngoingSessionsByUserIds(userIds);
+    }
+
+    // --- Crew highlight ---
+
+    @Override
+    public int countSharedSince(Long crewId, java.time.LocalDateTime since) {
+        return jpaRepository.countSharedSince(crewId, since);
+    }
+
+    @Override
+    public Optional<FocusSession> findHottestSharedSince(Long crewId, java.time.LocalDateTime since) {
+        List<FocusSession> result = jpaRepository.findHottestSharedSince(crewId, since, PageRequest.of(0, 1));
+        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
+    }
+
+    @Override
+    public Optional<FocusSession> findLongestSharedSince(Long crewId, java.time.LocalDateTime since) {
+        List<FocusSession> result = jpaRepository.findLongestSharedSince(crewId, since, PageRequest.of(0, 1));
+        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
+    }
+
+    @Override
+    public List<FocusSession> findRecentSharedCards(Long crewId, java.time.LocalDateTime since, int limit) {
+        return jpaRepository.findRecentSharedCards(crewId, since, PageRequest.of(0, limit));
+    }
+
+    private SliceResult<FocusSession> toSliceResult(Slice<FocusSession> slice) {
+        List<FocusSession> content = slice.getContent();
+        Long nextCursorId = slice.hasNext() && !content.isEmpty()
+                ? content.get(content.size() - 1).getId()
+                : null;
+        return new SliceResult<>(content, nextCursorId, slice.hasNext());
+    }
+
+    private SharedFocusSessionSlice toSharedFeedSlice(Slice<FocusSession> slice) {
+        List<FocusSession> content = slice.getContent();
+        boolean hasNext = slice.hasNext();
+        if (!hasNext || content.isEmpty()) {
+            return new SharedFocusSessionSlice(content, null, null, hasNext);
+        }
+        FocusSession last = content.get(content.size() - 1);
+        return new SharedFocusSessionSlice(content, last.getSharedAt(), last.getId(), true);
     }
 }

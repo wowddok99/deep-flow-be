@@ -12,6 +12,13 @@ dependencies {
     // Redis
     api("org.springframework.boot:spring-boot-starter-data-redis")
 
+    // Elasticsearch
+    implementation("org.springframework.boot:spring-boot-starter-data-elasticsearch")
+
+    // Spring Retry (outbox worker)
+    implementation("org.springframework.retry:spring-retry")
+    implementation("org.springframework:spring-aspects")
+
     // Redisson (분산 락)
     implementation("org.redisson:redisson-spring-boot-starter:3.27.0")
 

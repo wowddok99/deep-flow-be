@@ -18,7 +18,7 @@ public class SseAchievementNotifier implements AchievementNotifier {
     @Override
     public void notifyNewAchievements(Long userId, List<Achievement> achievements) {
         for (Achievement achievement : achievements) {
-            sseEmitterManager.send(userId, "achievement", Map.of(
+            sseEmitterManager.send(userId, SseEmitterManager.Channel.ACHIEVEMENT, "achievement", Map.of(
                     "code", achievement.getCode(),
                     "name", achievement.getName(),
                     "description", achievement.getDescription(),

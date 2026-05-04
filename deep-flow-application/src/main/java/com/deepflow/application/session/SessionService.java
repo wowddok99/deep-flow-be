@@ -15,6 +15,7 @@ import com.deepflow.application.session.dto.SessionSummaryInfo;
 import com.deepflow.domain.session.FocusSession;
 import com.deepflow.domain.session.SessionStatus;
 import com.deepflow.domain.session.event.LogUpdatedEvent;
+import com.deepflow.domain.session.event.SessionStartedEvent;
 import com.deepflow.domain.session.event.SessionStoppedEvent;
 import com.deepflow.domain.user.User;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +56,7 @@ public class SessionService {
         SessionInfo info = SessionInfo.from(sessionRepository.save(session));
         sessionTimeScheduler.scheduleForSession(userId, info.id());
         log.info("세션 시작: sessionId={}, userId={}", info.id(), userId);
+        eventPublisher.publishEvent(new SessionStartedEvent(info.id(), userId));
         return info;
     }
 
