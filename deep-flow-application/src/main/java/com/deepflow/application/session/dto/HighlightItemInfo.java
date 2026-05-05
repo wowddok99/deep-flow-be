@@ -12,8 +12,8 @@ public record HighlightItemInfo(
 ) {
     public enum Type { HOT, LONG, TAG, RECENT }
 
-    public static HighlightItemInfo hot(Long sessionId, String title, String userName, double score) {
-        return new HighlightItemInfo(Type.HOT, sessionId, title, userName, score, null, null, null);
+    public static HighlightItemInfo hot(Long sessionId, String title, String userName, double score, int count) {
+        return new HighlightItemInfo(Type.HOT, sessionId, title, userName, score, null, null, count);
     }
 
     public static HighlightItemInfo longSession(Long sessionId, String title, String userName, long durationSeconds) {

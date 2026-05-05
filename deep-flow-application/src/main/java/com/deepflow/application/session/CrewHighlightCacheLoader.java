@@ -78,7 +78,8 @@ public class CrewHighlightCacheLoader {
                     s.getId(),
                     s.getFocusLog() != null ? s.getFocusLog().getTitle() : null,
                     s.getUser() != null ? s.getUser().getName() : "알수없음",
-                    score));
+                    score,
+                    reactions));
         });
 
         Optional<FocusSession> longest = sessionRepository.findLongestSharedSince(crewId, since);
