@@ -9,4 +9,5 @@ public interface AchievementRepository {
     Optional<Achievement> findByCode(String code);
     List<Achievement> findAll();
     List<Achievement> findByCodes(List<String> codes);
+    long count();
 }

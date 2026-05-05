@@ -28,4 +28,9 @@ public class AchievementRepositoryImpl implements AchievementRepository {
     public List<Achievement> findByCodes(List<String> codes) {
         return jpaRepository.findByCodeIn(codes);
     }
+
+    @Override
+    public long count() {
+        return jpaRepository.count();
+    }
 }

@@ -1,6 +1,8 @@
 package com.deepflow.infra.persistence.stats;
 
+import com.deepflow.application.port.out.persistence.DayOfWeekStats;
 import com.deepflow.application.port.out.persistence.StatsRepository;
+import com.deepflow.application.stats.dto.DashboardSummaryStats;
 import com.deepflow.domain.stats.DailyFocusStats;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -31,6 +33,14 @@ public class StatsRepositoryImpl implements StatsRepository {
     }
 
     @Override
+    public Optional<DashboardSummaryStats> getDashboardSummary(Long userId,
+                                                               LocalDate thisWeekStart,
+                                                               LocalDate lastWeekStart,
+                                                               LocalDate lastWeekEnd) {
+        return jpaRepository.getDashboardSummary(userId, thisWeekStart, lastWeekStart, lastWeekEnd);
+    }
+
+    @Override
     public int sumSessionsByUserIdAndDateBetween(Long userId, LocalDate from, LocalDate to) {
         return jpaRepository.sumSessionsByUserIdAndDateBetween(userId, from, to);
     }
@@ -56,7 +66,7 @@ public class StatsRepositoryImpl implements StatsRepository {
     }
 
     @Override
-    public List<Object[]> findDayOfWeekStatsByUserId(Long userId) {
+    public List<DayOfWeekStats> findDayOfWeekStatsByUserId(Long userId) {
         return jpaRepository.findDayOfWeekStatsByUserId(userId);
     }
 
