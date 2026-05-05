@@ -115,4 +115,21 @@ public class StatsController {
                 LogActivityResponse.from(statsDashboardService.getLogActivity(userDetails.getUserId()))
         ));
     }
+
+    @Operation(summary = "Get all dashboard stats (consolidated — excludes calendar)")
+    @GetMapping("/all")
+    public ResponseEntity<CommonResponse<StatsDashboardAllResponse>> getAll(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long userId = userDetails.getUserId();
+        return ResponseEntity.ok(CommonResponse.ok(
+                new StatsDashboardAllResponse(
+                        DashboardOverviewResponse.from(statsDashboardService.getDashboardOverview(userId)),
+                        statsDashboardService.getWeeklyTrend(userId, 4).stream().map(WeeklyTrendResponse::from).toList(),
+                        statsDashboardService.getDayOfWeekDistribution(userId).stream().map(DayOfWeekStatsResponse::from).toList(),
+                        statsDashboardService.getHourlyDistribution(userId).stream().map(HourlyDistributionResponse::from).toList(),
+                        LogActivityResponse.from(statsDashboardService.getLogActivity(userId))
+                )
+        ));
+    }
 }
