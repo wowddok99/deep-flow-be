@@ -18,8 +18,7 @@ public interface SessionRepository {
     Optional<FocusSession> findById(Long id);
 
     /**
-     * 세션 ID 목록으로 batch 조회. 알림 deep link 매핑 등에서 sharedCrewId 만 빠르게 가져올 때 사용.
-     * fetch join 없음 — sharedCrewId/sharedAt 만 필요한 경우 가벼운 호출.
+     * 알림 이동 경로 매핑처럼 sharedCrewId, sharedAt 만 필요한 경로에서 연관 데이터를 로드하지 않고 한 번에 조회
      */
     List<FocusSession> findAllByIds(List<Long> ids);
 
@@ -51,55 +50,40 @@ public interface SessionRepository {
 
     double avgContentLength(Long userId);
 
-    // --- Crew presence ---
     List<Long> findOngoingUserIdsByUserIds(List<Long> userIds);
 
-    // --- Crew shared sessions ---
-
     /**
-     * 크루 피드 — User + FocusLog fetch join 으로 N+1 방지.
-     * 정렬: shared_at DESC, id DESC. WHERE 조건도 동일 키 (keyset pagination) 사용.
-     * cursor == null 이면 첫 페이지.
+     * 크루 피드 조회에서 User, FocusLog 를 함께 로드해 목록 조립 시 N+1 방지
+     *
+     * 정렬 키는 sharedAt DESC, id DESC 이며 cursor 도 같은 키 사용
      */
     SharedFocusSessionSlice findSharedByCrewWithCursorFetched(Long crewId, SharedFeedCursor cursor, int size);
 
     /**
-     * 크루 피드 + 정규화된 태그 필터. cursor == null 이면 첫 페이지.
+     * 정규화된 태그로 필터링하면서 크루 피드와 같은 커서 정렬 기준 사용
      */
     SharedFocusSessionSlice findSharedByCrewAndTagWithCursorFetched(Long crewId, String normalizedTag, SharedFeedCursor cursor, int size);
 
     /**
-     * 공유된 세션 상세 (User + FocusLog + Images fetch).
-     * 크루 멤버십 체크는 호출자 책임.
+     * 공유 세션 상세에서 본문과 이미지를 한 번에 노출하기 위해 작성자, 집중 기록, 이미지를 함께 조회
+     *
+     * 크루 멤버십 체크는 호출자 책임
      */
     Optional<FocusSession> findSharedByIdAndCrewWithFetch(Long sessionId, Long crewId);
 
     /**
-     * 주어진 사용자 IDs 중 ONGOING 세션을 가진 사용자만 추려 세션 + User fetch.
-     * 라이브 프레즌스 스냅샷용.
+     * 라이브 프레즌스 스냅샷 조립을 위해 진행 중 세션과 User 를 함께 조회
      */
     List<FocusSession> findOngoingSessionsByUserIds(List<Long> userIds);
 
-    // --- Crew highlight ---
-
-    /**
-     * 크루의 최근 since 이후 공유 세션 카운트. 하이라이트 모드 결정용.
-     */
     int countSharedSince(Long crewId, LocalDateTime since);
 
     /**
-     * MATURE 모드 — 점수 = reactionCount / hours_since_post 가 가장 높은 세션 1개.
-     * since 이후 공유된 세션 중에서.
+     * 하이라이트 MATURE 모드의 뜨거운 글 카드 선정을 위해 시간 대비 리액션 점수 기준 조회
      */
     Optional<FocusSession> findHottestSharedSince(Long crewId, LocalDateTime since);
 
-    /**
-     * MATURE 모드 — durationSeconds 가 가장 큰 세션 1개. since 이후 공유.
-     */
     Optional<FocusSession> findLongestSharedSince(Long crewId, LocalDateTime since);
 
-    /**
-     * GROWING 모드 — 최신 공유 세션 카드 N 개.
-     */
     List<FocusSession> findRecentSharedCards(Long crewId, LocalDateTime since, int limit);
 }

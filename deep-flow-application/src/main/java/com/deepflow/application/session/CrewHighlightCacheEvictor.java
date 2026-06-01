@@ -22,6 +22,7 @@ public class CrewHighlightCacheEvictor {
     private final CacheManager cacheManager;
     private final SessionRepository sessionRepository;
 
+    // 공유 상태와 리액션 수가 하이라이트 선정 기준이라 관련 변경 커밋 후 캐시 무효화
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onShared(SessionSharedEvent e) {
         evict(e.getCrewId());

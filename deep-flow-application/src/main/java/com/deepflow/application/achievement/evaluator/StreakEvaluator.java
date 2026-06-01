@@ -10,13 +10,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 연속 기록 일수 기반 칭호 평가.
- * 오늘부터 역순으로 세션 기록이 존재하는 연속 일수를 기준으로 판정함.
+ * 연속 기록 일수 기반 칭호 평가
  */
 @Component
 public class StreakEvaluator implements AchievementEvaluator {
 
-    /** 칭호 코드 → 최소 연속 일수 */
     private static final Map<String, Integer> THRESHOLDS = new LinkedHashMap<>() {{
         put("K-01", 2);
         put("K-02", 3);

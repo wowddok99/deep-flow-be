@@ -16,8 +16,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 요일/패턴 기반 칭호 평가.
- * 특정 요일 세션 횟수, 7일 연속 기록 주 수 등을 기준으로 판정함.
+ * 요일과 주 단위 기록 패턴 기반 칭호 평가
  */
 @Component
 @RequiredArgsConstructor
@@ -47,7 +46,7 @@ public class PatternEvaluator implements AchievementEvaluator {
             if ((satCount + sunCount) >= 10) achieved.add("P-03");
         }
 
-        // 풀위크: 한 주 7일 모두 세션 기록이 있는 주 수
+        // 풀위크 계산은 1년치 데이터를 한 번에 조회해 반복 쿼리 방지
         if (!context.alreadyAchieved("P-04") || !context.alreadyAchieved("P-05")) {
             long fullWeeks = countFullWeeks(userId);
             if (!context.alreadyAchieved("P-04") && fullWeeks >= 1) achieved.add("P-04");
@@ -57,15 +56,10 @@ public class PatternEvaluator implements AchievementEvaluator {
         return achieved;
     }
 
-    /**
-     * 최근 52주 중 7일 모두 기록이 있는 주 수를 계산함.
-     * 1년치 Stats를 한 번에 조회한 뒤 애플리케이션에서 주 단위로 그룹핑함.
-     */
     private long countFullWeeks(Long userId) {
         LocalDate today = LocalDate.now();
         LocalDate yearAgo = today.minusWeeks(52).with(DayOfWeek.MONDAY);
 
-        // 1년치 데이터를 한 번의 쿼리로 조회
         Set<LocalDate> activeDates = statsRepository.findByUserIdAndDateBetween(userId, yearAgo, today)
                 .stream()
                 .map(DailyFocusStats::getDate)

@@ -9,9 +9,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * MySQL FULLTEXT INDEX 는 ddl-auto=update 가 자동으로 만들지 않는다.
- * 부팅 시 INFORMATION_SCHEMA 로 존재 여부 확인 후 없으면 CREATE.
- * 운영 적용 시엔 마이그레이션 SQL 로 옮기면 됨 — 본 컴포넌트는 dev/staging 용.
+ * local, test 환경에서 MySQL FULLTEXT INDEX 누락 시 부팅 시점에 보완
+ *
+ * ddl-auto=update 가 FULLTEXT INDEX 를 만들지 않으므로 운영에서는 마이그레이션으로 대체 필요
  */
 @Slf4j
 @Component
@@ -24,6 +24,7 @@ public class FulltextIndexInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
+        // 로컬과 테스트는 마이그레이션 없이도 검색 기능을 바로 확인할 수 있도록 인덱스 보정
         ensureIndex("focus_log", "ft_focus_log_title_summary",
                 "ALTER TABLE focus_log ADD FULLTEXT INDEX ft_focus_log_title_summary (title, summary) WITH PARSER ngram");
         ensureIndex("session_tag", "ft_session_tag_tag",

@@ -120,11 +120,7 @@ public class SessionCommentService {
                 .toList();
     }
 
-    /**
-     * 댓글 ID 묶음으로 멘션을 batch 조회한 뒤, 멘션된 사용자 정보(username, name)를 한 번 더
-     * batch 로 조회해 commentId → 멘션 사용자 목록 으로 묶는다.
-     * 댓글 본문에서 '@username' 매칭으로 강조 표시할 때 정확한 사용자만 chip 스타일로 렌더된다.
-     */
+    // 댓글 본문에서 실제 멤버 멘션만 강조되도록 멘션과 사용자 정보를 한 번에 조립
     private Map<Long, List<MentionedUser>> loadMentionsByCommentId(List<Long> commentIds) {
         if (commentIds.isEmpty()) return Map.of();
 

@@ -23,8 +23,7 @@ public record CommentInfo(
     }
 
     /**
-     * 본문에서 강조 표시할 멘션 정보. content 의 '@username' 패턴을 클라이언트가 이 목록과
-     * 매칭해 chip 스타일로 렌더링한다.
+     * 댓글 본문에서 실제 멤버 멘션만 강조하기 위한 사용자 정보
      */
     public record MentionedUser(Long userId, String username, String name) {}
 
@@ -34,7 +33,7 @@ public record CommentInfo(
         List<CommentInfo> replies = childrenByParent.getOrDefault(c.getId(), List.of()).stream()
                 .map(child -> fromTree(child, childrenByParent, mentionsByCommentId))
                 .toList();
-        // soft-deleted 댓글은 본문이 마스킹되므로 멘션도 노출하지 않는다.
+        // 삭제된 댓글은 본문을 숨기므로 멘션 칩도 함께 숨김
         List<MentionedUser> mentions = c.isDeleted()
                 ? List.of()
                 : mentionsByCommentId.getOrDefault(c.getId(), List.of());

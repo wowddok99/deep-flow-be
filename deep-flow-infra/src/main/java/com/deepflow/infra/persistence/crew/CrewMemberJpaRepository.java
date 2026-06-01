@@ -41,9 +41,9 @@ interface CrewMemberJpaRepository extends JpaRepository<CrewMember, Long> {
     List<Long> findUserIdsByCrewId(@Param("crewId") Long crewId);
 
     /**
-     * CrewMember 와 User 사이에 JPA 연관관계가 없어 theta-join 으로 묶음.
-     * username/name 둘 다 prefix 매칭. ESCAPE 절은 호출부에서 '%','_','\\' 를 이스케이프해
-     * 들어오는 값을 리터럴로 처리하기 위한 것. 정렬은 username 사전순 (스펙 §9-1).
+     * CrewMember 와 User 사이에 JPA 연관관계가 없어 theta-join 사용
+     *
+     * 호출부에서 이스케이프한 %, _, \\ 값을 리터럴로 처리하기 위해 ESCAPE 절 유지
      */
     @Query("""
             SELECT new com.deepflow.application.session.dto.MemberSuggestionInfo(u.id, u.name, u.username)

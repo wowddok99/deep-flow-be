@@ -36,22 +36,10 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * 크루 기능 a~z 검증용 테스트 데이터 시더 (local 프로파일 전용).
+ * local 환경에서 크루 화면과 API 확인에 필요한 테스트 데이터 적재
  *
- * 전제: TestDataSeeder 가 먼저 실행되어 testuser 가 존재해야 함 (@Order 로 보장).
- *
- * 적재 내용:
- * - 추가 사용자 5명 (alice/bob/charlie/dave/eve, 모두 password = test1234)
- * - 크루 4개:
- *   1) StartFresh (PUBLIC) — 멤버 3명, 공유 0건 → 적응형 하이라이트 EMPTY 모드 검증
- *   2) StudyClub (PUBLIC) — 멤버 4명, 7일 내 공유 5건 → GROWING 모드 검증
- *   3) DevElite (PUBLIC) — 멤버 6명, 7일 내 공유 35건 → MATURE 모드 검증
- *   4) SecretRoom (PRIVATE) — 멤버 2명 (testuser 비멤버), 초대코드 발급 → 비멤버 가드 검증
- * - 다양한 태그 (정규화된 형태) + 리액션 5종 분포 + 댓글 트리 (답글 + 멘션 + 일부 soft-delete)
- * - ONGOING 세션 일부 → 라이브 프레즌스 검증
- * - 일부 공유 세션은 native UPDATE 로 updated_at > shared_at 강제 → edited=true 검증
- *
- * 멱등성: alice 사용자가 이미 있으면 skip.
+ * TestDataSeeder 이후 실행되어 기본 사용자와 함께 크루, 공유 세션,
+ * 댓글, 멘션, 리액션, 진행 중 세션 시나리오 구성
  */
 @Slf4j
 @Component
@@ -94,7 +82,6 @@ public class CrewTestDataSeeder implements CommandLineRunner {
 
         log.info("[CrewTestDataSeeder] 크루 테스트 데이터 적재 시작");
 
-        // ===== 1. 추가 사용자 5명 =====
         User testuser = userRepository.findByUsername("testuser").orElseThrow();
         User alice = createUser("alice", "김알리");
         User bob = createUser("bob", "박밥");
@@ -102,15 +89,13 @@ public class CrewTestDataSeeder implements CommandLineRunner {
         User dave = createUser("dave", "이데이브");
         User eve = createUser("eve", "한이브");
 
-        // ===== 2. 크루 4개 =====
-        // 2-1. EMPTY 모드 검증용 — 공유 0건
+        // 공유 수에 따른 하이라이트 모드 확인용 시나리오 구성
         Crew startFresh = createCrew("StartFresh", "이제 막 시작한 크루. 첫 공유를 기다리고 있어요.",
                 testuser.getId(), Visibility.PUBLIC, 20);
         addMember(startFresh.getId(), testuser.getId(), true);
         addMember(startFresh.getId(), alice.getId(), false);
         addMember(startFresh.getId(), bob.getId(), false);
 
-        // 2-2. GROWING 모드 검증용 — 7일 내 5건
         Crew studyClub = createCrew("StudyClub", "성장 중인 학습 크루. 함께 공부해요.",
                 testuser.getId(), Visibility.PUBLIC, 20);
         addMember(studyClub.getId(), testuser.getId(), true);
@@ -118,7 +103,6 @@ public class CrewTestDataSeeder implements CommandLineRunner {
         addMember(studyClub.getId(), bob.getId(), false);
         addMember(studyClub.getId(), charlie.getId(), false);
 
-        // 2-3. MATURE 모드 검증용 — 7일 내 35건
         Crew devElite = createCrew("DevElite", "활발한 개발자 크루. 매일 공유와 토론이 일어나요.",
                 testuser.getId(), Visibility.PUBLIC, 50);
         addMember(devElite.getId(), testuser.getId(), true);
@@ -128,7 +112,7 @@ public class CrewTestDataSeeder implements CommandLineRunner {
         addMember(devElite.getId(), dave.getId(), false);
         addMember(devElite.getId(), eve.getId(), false);
 
-        // 2-4. PRIVATE + 초대코드 발급 — testuser 비멤버
+        // 비공개 크루 접근 제어 확인을 위해 testuser 는 멤버에서 제외
         Crew secretRoom = createCrew("SecretRoom", "비공개 학습 그룹.",
                 alice.getId(), Visibility.PRIVATE, 5);
         addMember(secretRoom.getId(), alice.getId(), true);
@@ -139,7 +123,6 @@ public class CrewTestDataSeeder implements CommandLineRunner {
         log.info("[CrewTestDataSeeder] 크루 4개 적재: StartFresh({}), StudyClub({}), DevElite({}), SecretRoom({})",
                 startFresh.getId(), studyClub.getId(), devElite.getId(), secretRoom.getId());
 
-        // ===== 3. 공유 세션 — StudyClub (GROWING 검증, 5건) =====
         List<User> studyClubUsers = List.of(testuser, alice, bob, charlie);
         List<FocusSession> growingSessions = new ArrayList<>();
         growingSessions.add(seedSharedSession(alice, studyClub.getId(), 6, "JPA N+1 학습",
@@ -158,30 +141,27 @@ public class CrewTestDataSeeder implements CommandLineRunner {
                 "빌드 캐시 활용으로 이미지 크기 70% 감소.",
                 List.of("docker", "devops"), 45));
 
-        // ===== 4. 공유 세션 — DevElite (MATURE 검증, 35건) =====
         List<User> eliteUsers = List.of(testuser, alice, bob, charlie, dave, eve);
         List<FocusSession> matureSessions = new ArrayList<>();
         for (int i = 0; i < 35; i++) {
             User author = eliteUsers.get(i % eliteUsers.size());
-            int daysAgo = (i % 7);                                // 0~6일 전 분포
-            int hourOffset = (i * 3) % 22 + 1;                    // 1~22시
+            int daysAgo = (i % 7);
+            int hourOffset = (i * 3) % 22 + 1;
             String title = MATURE_TITLES[i % MATURE_TITLES.length];
             String summary = MATURE_SUMMARIES[i % MATURE_SUMMARIES.length];
             List<String> tags = pickTags(i);
-            int durationMin = 30 + (i * 7) % 240;                 // 30분 ~ 4.5시간
+            int durationMin = 30 + (i * 7) % 240;
 
             FocusSession s = seedSharedSession(author, devElite.getId(), daysAgo, hourOffset,
                     title, summary, tags, durationMin);
             matureSessions.add(s);
         }
 
-        // ===== 5. 리액션 — MATURE 의 일부 세션에 분포 =====
-        // "가장 뜨거운 글" 검증 — index 0 세션에 6명이 다 리액션
+        // 가장 반응이 많은 공유 세션이 안정적으로 생기도록 첫 세션에 리액션 집중
         applyReactionsAll(matureSessions.get(0), eliteUsers);
-        // 나머지 세션에 랜덤 리액션
         for (int i = 1; i < matureSessions.size(); i++) {
             FocusSession s = matureSessions.get(i);
-            int reactionUsers = RANDOM.nextInt(4);                // 0~3명
+            int reactionUsers = RANDOM.nextInt(4);
             for (int u = 0; u < reactionUsers; u++) {
                 User reactor = eliteUsers.get((i + u) % eliteUsers.size());
                 ReactionEmoji emoji = EMOJIS[(i + u) % EMOJIS.length];
@@ -190,16 +170,13 @@ public class CrewTestDataSeeder implements CommandLineRunner {
                 }
             }
         }
-        // GROWING 세션에도 일부 리액션
         for (int i = 0; i < growingSessions.size(); i++) {
             FocusSession s = growingSessions.get(i);
             User reactor = studyClubUsers.get((i + 1) % studyClubUsers.size());
             sessionReactionRepository.save(SessionReaction.of(s.getId(), reactor.getId(), ReactionEmoji.FIRE));
         }
 
-        // ===== 6. 댓글 + 답글 + 멘션 =====
-        // 6-1. StudyClub 첫 글에 댓글 1개 + 답글 1개 + testuser 멘션 → testuser 에게 unread 알림
-        FocusSession g0 = growingSessions.get(0);                 // alice 가 작성
+        FocusSession g0 = growingSessions.get(0);
         SessionComment parent = sessionCommentRepository.save(
                 SessionComment.create(g0.getId(), null, charlie, "저도 이거 빠졌었어요. @testuser 같이 공부해요!"));
         commentMentionRepository.save(CommentMention.create(parent.getId(), testuser.getId()));
@@ -207,13 +184,12 @@ public class CrewTestDataSeeder implements CommandLineRunner {
         SessionComment reply = sessionCommentRepository.save(
                 SessionComment.create(g0.getId(), parent.getId(), alice, "좋아요! 다음 주에 같이 풀어봐요."));
 
-        // 6-2. testuser 의 글에 alice 가 댓글 + bob 멘션 → bob 에게 unread 알림
-        FocusSession g3 = growingSessions.get(3);                 // testuser 가 작성
+        FocusSession g3 = growingSessions.get(3);
         SessionComment c2 = sessionCommentRepository.save(
                 SessionComment.create(g3.getId(), null, alice, "@bob 너도 이거 봤어? 도움됐어"));
         commentMentionRepository.save(CommentMention.create(c2.getId(), bob.getId()));
 
-        // 6-3. soft-deleted 댓글 — 멘션 cascade 미정리 검증용
+        // 삭제된 댓글의 멘션 알림 처리 확인용 데이터
         FocusSession g1 = growingSessions.get(1);
         SessionComment deletedC = sessionCommentRepository.save(
                 SessionComment.create(g1.getId(), null, dave, "@charlie 이건 어떻게 푼거야?"));
@@ -221,23 +197,19 @@ public class CrewTestDataSeeder implements CommandLineRunner {
         deletedC.softDelete(LocalDateTime.now());
         sessionCommentRepository.save(deletedC);
 
-        // 6-4. MATURE 의 가장 뜨거운 글에 댓글 3건
         FocusSession m0 = matureSessions.get(0);
         sessionCommentRepository.save(SessionComment.create(m0.getId(), null, alice, "정리 깔끔하네요!"));
         sessionCommentRepository.save(SessionComment.create(m0.getId(), null, dave, "참고할게요 👍"));
         sessionCommentRepository.save(SessionComment.create(m0.getId(), null, eve, "오 이거 저도 막혔던 부분이에요"));
 
-        // ===== 7. ONGOING 세션 — 라이브 프레즌스 검증 =====
-        // alice 와 charlie 가 지금 집중 중
-        seedOngoingSession(alice, 45);                            // 45분째
-        seedOngoingSession(charlie, 12);                          // 12분째
+        // 라이브 프레즌스 확인용 진행 중 세션
+        seedOngoingSession(alice, 45);
+        seedOngoingSession(charlie, 12);
 
-        // ===== 8. edited=true 검증 안내 =====
-        // 시드 트랜잭션 안에서는 updatedAt 과 sharedAt 이 거의 동일 → edited 가 모두 false.
+        // 시드 트랜잭션 안에서는 updatedAt 과 sharedAt 이 거의 동일해 edited 가 모두 false
         // edited=true 시각 검증은 UI 에서 작성자(예: alice) 로 로그인 후 본인 공유 세션의
-        // 본문을 한번 수정하면 자동으로 발생.
+        // 본문을 한번 수정하면 자동으로 발생
 
-        // ===== 완료 =====
         log.info("[CrewTestDataSeeder] 크루 테스트 데이터 적재 완료.");
         log.info("  - 사용자: testuser, alice, bob, charlie, dave, eve (모두 password = {})", COMMON_PASSWORD);
         log.info("  - 크루: StartFresh(EMPTY 모드), StudyClub(GROWING), DevElite(MATURE 35건), SecretRoom(PRIVATE+초대코드 INVITE7K)");
@@ -246,8 +218,6 @@ public class CrewTestDataSeeder implements CommandLineRunner {
         log.info("  - charlie 에게 unread 멘션 1건 (단 댓글 soft-deleted — TASK-002 검증용)");
         log.info("  - edited=true 검증은 UI 에서 본문 한 번 수정 시 발생");
     }
-
-    // ===== Helpers =====
 
     private User createUser(String username, String name) {
         return userRepository.save(User.builder()
@@ -269,9 +239,6 @@ public class CrewTestDataSeeder implements CommandLineRunner {
                 : CrewMember.newMember(crewId, userId));
     }
 
-    /**
-     * 공유된 세션 1건 적재. 시작 시각 = N일 전 오후 8시. 종료/공유 = 시작 + durationMin.
-     */
     private FocusSession seedSharedSession(User author, Long crewId, int daysAgo,
                                             String title, String summary,
                                             List<String> tags, int durationMin) {
@@ -309,9 +276,6 @@ public class CrewTestDataSeeder implements CommandLineRunner {
         return saved;
     }
 
-    /**
-     * ONGOING 세션 (라이브 프레즌스용). 시작 = 지금 - minutes 분, endTime = null.
-     */
     private void seedOngoingSession(User user, int minutesAgo) {
         LocalDateTime start = LocalDateTime.now().minusMinutes(minutesAgo);
         FocusSession session = FocusSession.builder()
@@ -337,11 +301,9 @@ public class CrewTestDataSeeder implements CommandLineRunner {
         }
     }
 
-    /**
-     * 결정적인 태그 분포 — 인기 태그 검증을 위해 일부 태그가 자주 등장하도록.
-     */
+    // 인기 태그 집계가 흔들리지 않도록 고정된 분포 사용
     private List<String> pickTags(int seed) {
-        int n = 1 + (seed % 3);                                   // 1~3개
+        int n = 1 + (seed % 3);
         List<String> pick = new ArrayList<>();
         for (int i = 0; i < n; i++) {
             String t = POPULAR_TAGS[(seed * 7 + i * 3) % POPULAR_TAGS.length];

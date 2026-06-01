@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-/** 첫 걸음 관련 칭호 평가 (첫 세션 완료, 첫 제목/본문/이미지/요약 작성) */
+/** 첫 세션 완료와 첫 기록 작성 계열 칭호 평가 */
 @Component
 public class FirstStepEvaluator implements AchievementEvaluator {
 
@@ -25,13 +25,12 @@ public class FirstStepEvaluator implements AchievementEvaluator {
         List<String> achieved = new ArrayList<>();
         FocusLog log = context.completedSession().getFocusLog();
 
-        // F-01: 세션 종료 시에만 (첫 세션 완료)
+        // 첫 세션 완료는 로그 수정 트리거에서 지급되지 않도록 종료 상태 확인
         if (!context.alreadyAchieved("F-01")
                 && context.completedSession().getStatus() == SessionStatus.COMPLETED) {
             achieved.add("F-01");
         }
 
-        // F-02~F-05: 로그 업데이트 시에도 즉시 감지
         if (!context.alreadyAchieved("F-02") && log.getTitle() != null && !log.getTitle().isBlank()) {
             achieved.add("F-02");
         }

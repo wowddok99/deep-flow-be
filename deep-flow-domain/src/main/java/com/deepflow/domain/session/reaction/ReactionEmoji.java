@@ -3,11 +3,11 @@ package com.deepflow.domain.session.reaction;
 import java.util.Arrays;
 
 public enum ReactionEmoji {
-    THUMBS_UP("👍"),    // 👍
-    FIRE("🔥"),         // 🔥
-    COFFEE("☕"),             // ☕
-    LIGHT_BULB("💡"),   // 💡
-    BULLSEYE("🎯");     // 🎯
+    THUMBS_UP("👍"),
+    FIRE("🔥"),
+    COFFEE("☕"),
+    LIGHT_BULB("💡"),
+    BULLSEYE("🎯");
 
     private final String unicode;
 

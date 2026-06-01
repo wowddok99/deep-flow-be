@@ -82,8 +82,7 @@ public class SessionRepositoryImpl implements SessionRepository {
 
     @Override
     public long countByUserIdAndDayOfWeek(Long userId, int dayOfWeek) {
-        // Java DayOfWeek는 월=1부터, MySQL DAYOFWEEK()는 일=1부터 시작함
-        // 변환 없이 넘기면 월요일(Java 1)이 일요일(MySQL 1)로 잘못 매칭됨
+        // Java DayOfWeek 와 MySQL DAYOFWEEK 의 시작 요일 차이 보정
         int mysqlDow = (dayOfWeek % 7) + 1;
         return jpaRepository.countByUserIdAndDayOfWeek(userId, mysqlDow);
     }
@@ -142,8 +141,6 @@ public class SessionRepositoryImpl implements SessionRepository {
         return jpaRepository.findOngoingUserIdsByUserIds(userIds);
     }
 
-    // --- Crew shared sessions ---
-
     @Override
     public SharedFocusSessionSlice findSharedByCrewWithCursorFetched(Long crewId, SharedFeedCursor cursor, int size) {
         Pageable pageable = PageRequest.of(0, size);
@@ -172,8 +169,6 @@ public class SessionRepositoryImpl implements SessionRepository {
         if (userIds == null || userIds.isEmpty()) return List.of();
         return jpaRepository.findOngoingSessionsByUserIds(userIds);
     }
-
-    // --- Crew highlight ---
 
     @Override
     public int countSharedSince(Long crewId, java.time.LocalDateTime since) {

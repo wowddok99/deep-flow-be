@@ -45,12 +45,7 @@ public record CrewFeedItemInfo(
         return from(session, tags, 0, 0);
     }
 
-    /**
-     * "(편집됨)" 표시
-     * - 공유 이후 수정만 true
-     * - log.updatedAt 기준
-     * - session.updatedAt 사용 금지 (본문 수정 없어도 true 될 수 있음)
-     */
+    // 본문 수정 여부만 반영하기 위해 session.updatedAt 대신 log.updatedAt 기준 사용
     private static boolean computeEdited(FocusSession session) {
         FocusLog log = session.getFocusLog();
         if (log == null || log.getUpdatedAt() == null) return false;
@@ -58,11 +53,7 @@ public record CrewFeedItemInfo(
         return log.getUpdatedAt().isAfter(session.getSharedAt());
     }
 
-    /**
-     * summary preview
-     * - summary 없으면 null (content fallback 금지)
-     * - 최대 100자
-     */
+    // 피드 목록에서는 긴 본문 fallback 없이 작성자가 남긴 요약만 미리보기로 노출
     private static String buildPreview(FocusLog log) {
         if (log == null || log.getSummary() == null || log.getSummary().isBlank()) return null;
         String s = log.getSummary().trim();

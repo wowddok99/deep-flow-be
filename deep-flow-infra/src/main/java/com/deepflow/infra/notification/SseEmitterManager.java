@@ -9,9 +9,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * (userId, channel) 별 SseEmitter 생명주기 관리.
- * 같은 사용자가 여러 SSE 채널(achievement / crew presence) 을 동시에 유지할 수 있도록
- * 키를 채널별로 분리한다.
+ * 사용자와 채널 단위로 SSE 연결 생명주기 관리
+ *
+ * 같은 사용자가 칭호, 크루 프레즌스, 댓글 알림 채널을 동시에 유지할 수 있도록 키 분리
  */
 @Slf4j
 @Component
@@ -21,7 +21,7 @@ public class SseEmitterManager {
 
     private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
 
-    private static final long SSE_TIMEOUT = 30 * 60 * 1000L; // 30분
+    private static final long SSE_TIMEOUT = 30 * 60 * 1000L;
 
     private String key(Long userId, Channel channel) {
         return userId + ":" + channel.name();
@@ -30,7 +30,7 @@ public class SseEmitterManager {
     public SseEmitter connect(Long userId, Channel channel) {
         String compositeKey = key(userId, channel);
 
-        // 같은 (userId, channel) 의 기존 연결만 닫는다 — 다른 채널은 영향 없음
+        // 같은 채널의 이전 연결만 닫아 다른 SSE 채널은 유지
         SseEmitter existing = emitters.remove(compositeKey);
         if (existing != null) {
             existing.complete();

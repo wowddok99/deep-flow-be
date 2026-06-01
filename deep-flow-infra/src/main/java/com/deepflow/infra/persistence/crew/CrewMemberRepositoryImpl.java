@@ -80,7 +80,7 @@ public class CrewMemberRepositoryImpl implements CrewMemberRepository {
     @Override
     public List<MemberSuggestionInfo> suggestMembers(Long crewId, Long excludeUserId, String prefix, int limit) {
         if (prefix == null || prefix.isBlank()) return List.of();
-        // 사용자가 입력한 '%','_','\\' 가 LIKE 와일드카드로 오동작하지 않도록 이스케이프 처리
+        // 사용자 입력 %, _, \\ 문자가 LIKE 와일드카드로 동작하지 않도록 이스케이프
         String escaped = prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
         return jpaRepository.suggestMembers(crewId, excludeUserId, escaped + "%", PageRequest.of(0, limit));
     }

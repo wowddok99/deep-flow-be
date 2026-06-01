@@ -17,6 +17,7 @@ public class OutboxPublisher {
     private final OutboxRepository outboxRepository;
     private final ObjectMapper objectMapper;
 
+    // 세션 공유 트랜잭션 안에 검색 인덱싱 요청을 남겨 데이터 저장과 후처리 누락을 함께 방지
     public void publish(OutboxEventType type, Long aggregateId, Object payload) {
         try {
             String json = objectMapper.writeValueAsString(payload);

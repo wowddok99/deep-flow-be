@@ -30,13 +30,12 @@ public interface CrewMemberRepository {
     List<CrewMember> findAllByCrewIds(List<Long> ids);
 
     /**
-     * 크루의 user_id Set — 멘션/알림 가드용 (멤버십 체크 빈도 높은 경로에서 batch 사용).
+     * 멘션과 알림 가드에서 멤버십을 빠르게 확인하기 위한 크루 사용자 ID 집합
      */
     java.util.Set<Long> findUserIdsByCrewId(Long crewId);
 
     /**
-     * 크루 멤버 중 username/name prefix 매칭. 본인은 제외.
-     * 멘션 자동완성용. 결과는 username 사전순 정렬.
+     * 댓글 멘션 자동완성에서 본인을 제외하고 사용자명과 이름을 입력 접두어로 매칭
      */
     List<com.deepflow.application.session.dto.MemberSuggestionInfo> suggestMembers(
             Long crewId, Long excludeUserId, String prefix, int limit);

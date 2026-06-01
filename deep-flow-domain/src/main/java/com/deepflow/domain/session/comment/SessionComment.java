@@ -33,9 +33,7 @@ public class SessionComment extends BaseTimeEntity {
     @Column(name = "session_id", nullable = false)
     private Long sessionId;
 
-    /**
-     * 블록 단위 댓글 실험 진입 시만 사용. 현재 항상 NULL.
-     */
+    // 블록 단위 댓글 실험을 위해 스키마만 선반영한 필드
     @Column(name = "block_id", length = 64)
     private String blockId;
 

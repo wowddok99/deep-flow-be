@@ -6,8 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * PUT 시맨틱: name / visibility 는 필수.
- * description 은 null = 명시적 비움, maxMembers 는 null = 무제한.
+ * 전체 수정 요청에서 description null 은 명시적 비움, maxMembers null 은 무제한으로 처리
  */
 public record UpdateCrewRequest(
         @NotBlank @Size(max = 30) String name,

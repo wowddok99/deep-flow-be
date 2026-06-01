@@ -34,24 +34,21 @@ public class AchievementService {
 
     @Transactional
     public List<Achievement> checkAndGrant(Long userId, Long sessionId) {
-        // 기본 트리거로 실행
         return checkAndGrant(userId, sessionId, TriggerType.SESSION_STOP);
     }
 
     /**
-     * triggerType에 해당하는 Evaluator만 실행하여 칭호를 수여한다.
+     * 현재 트리거에서 평가 가능한 칭호를 확인하고 새로 달성한 칭호만 수여
+     *
      * @return 새로 수여된 칭호 목록 (SSE 알림용)
      */
     @Transactional
     public List<Achievement> checkAndGrant(Long userId, Long sessionId, TriggerType triggerType) {
-        // 세션 조회
         FocusSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
 
-        // 평가용 컨텍스트 생성
         AchievementContext context = buildContext(userId, session, triggerType);
 
-        // 해당 트리거를 지원하는 evaluator만 실행하여 달성 코드 수집
         List<String> newCodes = evaluators.stream()
                 .filter(e -> e.supportedTriggers().contains(triggerType))
                 .flatMap(e -> e.evaluate(context).stream())
@@ -60,12 +57,10 @@ public class AchievementService {
 
         if (newCodes.isEmpty()) return List.of();
 
-        // 칭호 및 유저 조회
         List<Achievement> achievements = achievementRepository.findByCodes(newCodes);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
 
-        // 중복 지급 방지 (동시성 대응)
         List<Achievement> granted = new ArrayList<>();
         for (Achievement achievement : achievements) {
             try {
@@ -77,7 +72,7 @@ public class AchievementService {
                         userId, achievement.getCode(), achievement.getName(), triggerType);
 
             } catch (DataIntegrityViolationException e) {
-                // 이미 지급된 경우 무시
+                // 동시 평가로 이미 지급된 칭호는 유니크 제약에 맡기고 무시
                 log.debug("Achievement already granted (concurrent): userId={}, code={}",
                         userId, achievement.getCode());
             }
@@ -87,7 +82,7 @@ public class AchievementService {
     }
 
     /**
-     * 전체 칭호 + 달성 여부 반환 (도감용)
+     * 전체 칭호와 사용자 달성 여부를 함께 조회
      */
     public List<AchievementInfo> getAllAchievements(Long userId) {
         List<Achievement> all = achievementRepository.findAll();
@@ -99,7 +94,7 @@ public class AchievementService {
     }
 
     /**
-     * 내가 획득한 칭호 목록 조회
+     * 사용자가 획득한 칭호 목록 조회
      */
     public List<UserAchievementInfo> getMyAchievements(Long userId) {
         return userAchievementRepository.findByUserIdWithAchievement(userId).stream()
@@ -108,7 +103,7 @@ public class AchievementService {
     }
 
     /**
-     * 대표 칭호 설정 (획득한 칭호만 가능)
+     * 사용자가 획득한 칭호만 대표 칭호로 설정
      */
     @Transactional
     public void updateDisplayAchievement(Long userId, String achievementCode) {
@@ -125,9 +120,6 @@ public class AchievementService {
         user.updateDisplayAchievement(achievement);
     }
 
-    /**
-     * evaluator에서 사용할 데이터 묶음 생성
-     */
     private AchievementContext buildContext(Long userId, FocusSession session, TriggerType triggerType) {
         long totalDuration = statsRepository.sumTotalDurationByUserId(userId);
         long totalSessions = statsRepository.sumTotalSessionsByUserId(userId);
@@ -143,9 +135,6 @@ public class AchievementService {
                 streak, userCreatedDate, achievedCodes, triggerType);
     }
 
-    /**
-     * 오늘부터 연속으로 세션이 있는 일수 계산
-     */
     private int calculateStreak(Long userId) {
         LocalDate checkDate = LocalDate.now();
         int streak = 0;

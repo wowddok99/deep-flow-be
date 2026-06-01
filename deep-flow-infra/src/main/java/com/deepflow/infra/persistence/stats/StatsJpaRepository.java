@@ -18,7 +18,7 @@ interface StatsJpaRepository extends JpaRepository<DailyFocusStats, Long> {
     List<DailyFocusStats> findByUserIdAndDateBetweenOrderByDateAsc(Long userId, LocalDate from, LocalDate to);
 
     /**
-     * 대시보드 개요 통합 집계 쿼리. COALESCE로 데이터 없을 시 0 반환.
+     * 대시보드 개요 화면의 전체, 이번주, 지난주 집계를 한 번에 조회
      */
     @Query("SELECT new com.deepflow.application.stats.dto.DashboardSummaryStats(" +
            "COALESCE(SUM(s.totalSessions), 0), " +

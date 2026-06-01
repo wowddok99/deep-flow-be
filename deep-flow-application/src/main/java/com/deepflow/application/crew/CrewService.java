@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -41,8 +42,11 @@ public class CrewService {
     private final InviteCodeGenerator inviteCodeGenerator;
     private final CrewJoinLocker crewJoinLocker;
 
-    // ---------- 생성 ----------
-
+    /**
+     * 새 크루를 만들고 생성자를 소유자 멤버로 등록
+     *
+     * 크루 생성과 소유자 등록은 분리되면 안 되는 하나의 유스케이스로 처리
+     */
     @Transactional
     public CrewSummaryInfo create(Long userId, CrewCreateCommand cmd) {
         userRepository.findById(userId)
@@ -63,8 +67,9 @@ public class CrewService {
         return CrewSummaryInfo.of(saved, 1L, 0, CrewRole.OWNER);
     }
 
-    // ---------- 조회 ----------
-
+    /**
+     * 사용자가 속한 크루 목록을 요약 정보와 함께 조회
+     */
     public List<CrewSummaryInfo> listMyCrews(Long userId) {
         List<CrewMember> myMemberships = crewMemberRepository.findAllByUserId(userId);
         if (myMemberships.isEmpty()) return List.of();
@@ -75,14 +80,13 @@ public class CrewService {
         Map<Long, CrewRole> roleByCrew = myMemberships.stream()
                 .collect(Collectors.toMap(CrewMember::getCrewId, CrewMember::getRole));
 
-        // 모든 멤버 한 번에 로드 → crewId 별로 userId 묶기
+        // 크루별 멤버 수와 활동 인원 계산에서 N+1 조회 방지
         List<CrewMember> allMembers = crewMemberRepository.findAllByCrewIds(crewIds);
         Map<Long, List<Long>> userIdsByCrew = allMembers.stream()
                 .collect(Collectors.groupingBy(
                         CrewMember::getCrewId,
                         Collectors.mapping(CrewMember::getUserId, Collectors.toList())));
 
-        // 모든 ONGOING user 한 번에 로드 → Set 캐싱
         List<Long> distinctMemberIds = allMembers.stream()
                 .map(CrewMember::getUserId).distinct().toList();
         Set<Long> ongoingSet = new HashSet<>(
@@ -99,6 +103,11 @@ public class CrewService {
                 .toList();
     }
 
+    /**
+     * 크루 상세와 멤버 목록을 조회
+     *
+     * 초대 코드는 유효 기간이 남은 경우에만 응답에 포함
+     */
     public CrewDetailInfo getDetail(Long userId, Long crewId) {
         Crew crew = getCrew(crewId);
 
@@ -141,6 +150,9 @@ public class CrewService {
         );
     }
 
+    /**
+     * 공개 크루를 검색하고 가입 여부와 현재 활동 인원을 함께 조회
+     */
     public SliceResult<CrewSummaryInfo> searchPublic(Long userId, String q, Long cursorId, int size) {
         String keyword = q == null ? "" : q.trim();
         SliceResult<Crew> result = crewRepository.searchPublic(keyword, cursorId, size);
@@ -151,20 +163,18 @@ public class CrewService {
 
         List<Long> resultCrewIds = result.content().stream().map(Crew::getId).toList();
 
-        // 검색 결과 크루의 모든 멤버 한 번에 로드
+        // 검색 결과의 요약 지표를 한 번에 조립해 크루별 반복 조회 방지
         List<CrewMember> allMembers = crewMemberRepository.findAllByCrewIds(resultCrewIds);
         Map<Long, List<Long>> userIdsByCrew = allMembers.stream()
                 .collect(Collectors.groupingBy(
                         CrewMember::getCrewId,
                         Collectors.mapping(CrewMember::getUserId, Collectors.toList())));
 
-        // 모든 ONGOING user 한 번에 로드
         List<Long> distinctMemberIds = allMembers.stream()
                 .map(CrewMember::getUserId).distinct().toList();
         Set<Long> ongoingSet = new HashSet<>(
                 sessionRepository.findOngoingUserIdsByUserIds(distinctMemberIds));
 
-        // 내 역할 매핑
         Map<Long, CrewRole> myRoleByCrew = allMembers.stream()
                 .filter(cm -> cm.getUserId().equals(userId))
                 .collect(Collectors.toMap(CrewMember::getCrewId, CrewMember::getRole));
@@ -181,14 +191,16 @@ public class CrewService {
         return new SliceResult<>(content, result.nextCursorId(), result.hasNext());
     }
 
-    // ---------- 수정 ----------
-
+    /**
+     * 크루 기본 정보를 수정
+     *
+     * 최대 인원은 현재 멤버 수보다 작게 줄일 수 없음
+     */
     @Transactional
     public CrewSummaryInfo update(Long userId, Long crewId, CrewUpdateCommand cmd) {
         Crew crew = getCrew(crewId);
         if (!crew.isOwner(userId)) throw new CrewAccessDeniedException();
 
-        // PUT 시맨틱: name/visibility 는 필수, description/maxMembers 는 null = 명시적 비움/무제한.
         String name = normalizeName(cmd.name());
         String description = normalizeDescription(cmd.description());
         Visibility visibility = cmd.visibility() != null ? cmd.visibility() : crew.getVisibility();
@@ -206,8 +218,11 @@ public class CrewService {
         return CrewSummaryInfo.of(saved, currentCount, activeNow, CrewRole.OWNER);
     }
 
-    // ---------- 해체 ----------
-
+    /**
+     * 크루를 해체하고 모든 멤버십을 제거
+     *
+     * 멤버십이 남으면 해체된 크루가 사용자 목록에 노출될 수 있으므로 함께 삭제
+     */
     @Transactional
     public void disband(Long userId, Long crewId) {
         Crew crew = getCrew(crewId);
@@ -220,8 +235,11 @@ public class CrewService {
         log.info("크루 해체: crewId={}, ownerUserId={}", crewId, userId);
     }
 
-    // ---------- 초대 코드 ----------
-
+    /**
+     * 크루 가입용 초대 코드를 발급
+     *
+     * 같은 코드가 저장되지 않도록 충돌 시 새 코드를 다시 생성
+     */
     @Transactional
     @DistributedLock(key = "'crew_invite:' + #crewId")
     public InviteCodeIssuedInfo issueInviteCode(Long userId, Long crewId, int ttlMinutes) {
@@ -243,6 +261,7 @@ public class CrewService {
                 code = candidate;
                 break;
             } catch (DataIntegrityViolationException e) {
+                // 초대 코드는 유니크 제약을 기준으로 충돌을 감지하므로 새 후보로 재시도
                 log.warn("초대 코드 충돌 재시도: attempt={}", i + 1);
             }
         }
@@ -255,12 +274,12 @@ public class CrewService {
         return new InviteCodeIssuedInfo(code, expiresAt);
     }
 
-    // ---------- 가입 ----------
-    //
-    // joinByCode / joinPublic 은 외부 진입점이며 @Transactional 을 두지 않는다.
-    // CrewJoinLocker.join 이 @DistributedLock 을 통해 락 안에서 REQUIRES_NEW TX 를 시작·커밋한 뒤
-    // 락을 해제하기 때문에, 여기서 외부 TX 를 열면 락 순서가 깨진다.
-
+    /**
+     * 초대 코드로 크루에 가입
+     *
+     * 초대 코드 검증만 이 단계에서 수행하고 가입 처리는 크루별 분산 락 안으로 위임
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public CrewSummaryInfo joinByCode(Long userId, String code) {
         if (code == null || code.isBlank()) throw new InvalidInviteCodeException();
 
@@ -271,13 +290,20 @@ public class CrewService {
         return crewJoinLocker.join(userId, crew.getId(), false);
     }
 
+    /**
+     * 공개 크루에 가입
+     *
+     * 공개 여부와 최대 인원 검증은 크루별 분산 락 안에서 처리
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public CrewSummaryInfo joinPublic(Long userId, Long crewId) {
         return crewJoinLocker.join(userId, crewId, true);
     }
 
     /**
-     * CrewJoinLocker 가 분산 락을 획득한 뒤에만 호출되는 가입 본문.
-     * 외부에서 직접 호출하지 말 것 (락 우회 위험).
+     * CrewJoinLocker 가 분산 락을 획득한 뒤에만 호출되는 가입 본문
+     *
+     * 외부에서 직접 호출하면 최대 인원 검증을 락 없이 통과할 수 있으므로 CrewJoinLocker 를 통해 호출
      */
     @Transactional
     public CrewSummaryInfo joinCrewLockedInternal(Long userId, Long crewId, boolean requirePublic) {
@@ -292,6 +318,7 @@ public class CrewService {
         }
 
         long currentCount = crewMemberRepository.countByCrewId(crewId);
+        // maxMembers 가 없으면 서비스 전체 상한을 적용해 무제한 증가를 방지
         int effectiveLimit = crew.getMaxMembers() != null
                 ? crew.getMaxMembers()
                 : HARD_LIMIT_MAX_MEMBERS;
@@ -308,8 +335,11 @@ public class CrewService {
         return CrewSummaryInfo.of(crew, newCount, activeNow, CrewRole.MEMBER);
     }
 
-    // ---------- 탈퇴 ----------
-
+    /**
+     * 크루에서 탈퇴
+     *
+     * 소유자는 크루 관리 책임이 남아 있으므로 일반 탈퇴를 허용하지 않음
+     */
     @Transactional
     public void leave(Long userId, Long crewId) {
         CrewMember membership = crewMemberRepository.findByCrewIdAndUserId(crewId, userId)
@@ -321,10 +351,16 @@ public class CrewService {
         log.info("크루 탈퇴: crewId={}, userId={}", crewId, userId);
     }
 
+    /**
+     * 소유자가 다른 멤버를 크루에서 추방
+     *
+     * 소유자 본인은 일반 추방 대상에서 제외
+     */
     @Transactional
     public void kick(Long ownerUserId, Long crewId, Long targetUserId) {
         Crew crew = getCrew(crewId);
         if (!crew.isOwner(ownerUserId)) throw new CrewAccessDeniedException();
+        // 자기 자신 추방은 소유자 권한 우회나 크루 상태 불일치를 만들 수 있어 차단
         if (Objects.equals(ownerUserId, targetUserId)) {
             throw new CrewAccessDeniedException();
         }
@@ -336,8 +372,9 @@ public class CrewService {
         log.info("크루 추방: crewId={}, targetUserId={}", crewId, targetUserId);
     }
 
-    // ---------- 활동 지표 ----------
-
+    /**
+     * 크루의 오늘 활동, 주간 추이, 멤버 랭킹을 조회
+     */
     public CrewActivityInfo getActivity(Long userId, Long crewId) {
         if (!crewMemberRepository.existsByCrewIdAndUserId(crewId, userId)) {
             throw new NotCrewMemberException();
@@ -349,6 +386,7 @@ public class CrewService {
         Set<Long> activeSet = new HashSet<>(sessionRepository.findOngoingUserIdsByUserIds(memberIds));
         LocalDate today = LocalDate.now();
         Set<Long> todaySet = new HashSet<>(statsRepository.findUserIdsWithActivityOnDate(memberIds, today));
+        // 진행 중인 세션은 아직 일별 통계에 반영되지 않았을 수 있어 오늘 활동자로 포함
         todaySet.addAll(activeSet);
 
         long todayTotal = statsRepository.sumDurationByUserIdsOnDate(memberIds, today);
@@ -373,8 +411,6 @@ public class CrewService {
         return new CrewActivityInfo(activeSet.size(), todaySet.size(), todayTotal, weekly, ranking);
     }
 
-    // ---------- 내부 유틸 ----------
-
     private Crew getCrew(Long crewId) {
         return crewRepository.findById(crewId).orElseThrow(CrewNotFoundException::new);
     }
@@ -398,7 +434,7 @@ public class CrewService {
                 .collect(Collectors.toMap(
                         User::getId,
                         User::getName,
-                        (a, b) -> a));   // 중복 키 발생 시 IllegalStateException 방지
+                        (a, b) -> a));
     }
 
     private String normalizeName(String name) {
@@ -417,10 +453,7 @@ public class CrewService {
         return trimmed;
     }
 
-    /**
-     * null = 무제한 (create / update 공통). 0 sentinel 같은 마법값을 두지 않는다.
-     * 양수면 2 ~ 500 범위 검증.
-     */
+    // null 은 무제한으로 유지해 0 같은 특수값 없이 저장
     private Integer normalizeMaxMembers(Integer maxMembers) {
         if (maxMembers == null) return null;
         if (maxMembers < MIN_MAX_MEMBERS || maxMembers > HARD_LIMIT_MAX_MEMBERS) {

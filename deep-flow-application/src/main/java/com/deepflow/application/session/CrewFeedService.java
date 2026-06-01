@@ -33,9 +33,9 @@ public class CrewFeedService {
     private final TagNormalizer tagNormalizer;
 
     /**
-     * 크루 피드 — fetch join 으로 N+1 방지, 태그는 sessionIds 단위 batch.
-     * tag 파라미터는 정규화 후 매칭 (사용자가 'JPA' 입력해도 'jpa' 로 검색).
-     * cursor 는 (sharedAt, id) 복합 커서를 인코딩한 불투명 토큰. null 또는 빈 값이면 첫 페이지.
+     * 크루 피드를 불투명 커서 기반으로 조회
+     *
+     * 세션 본문 정보는 함께 로드하고 태그, 리액션, 댓글 수는 세션 ID 단위로 묶어 조회
      */
     public SharedFeedSlice<CrewFeedItemInfo> getFeed(Long userId, Long crewId, String cursorToken, int size, String tag) {
         if (!crewMemberRepository.existsByCrewIdAndUserId(crewId, userId)) {
@@ -80,8 +80,7 @@ public class CrewFeedService {
     }
 
     /**
-     * 공유 세션 단건 상세 — 크루 멤버이고, 해당 크루로 공유된 세션이어야 함.
-     * 본문(content) 포함. 크루 멤버이면 풀 본문을 볼 수 있다는 정책.
+     * 크루 멤버에게 공유 세션의 전체 본문과 상호작용 집계를 제공
      */
     public CrewSessionDetailInfo getSharedSession(Long userId, Long crewId, Long sessionId) {
         if (!crewMemberRepository.existsByCrewIdAndUserId(crewId, userId)) {

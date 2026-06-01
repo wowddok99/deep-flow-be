@@ -21,7 +21,8 @@ public class DailyFocusStats extends BaseTimeEntity {
     private Long id;
 
     /**
-     * 성능 및 확장성을 위한 비정규화 필드.
+     * 통계 적재는 쓰기 빈도가 높아 User 연관관계 대신 userId 만 저장
+     *
      * - @ManyToOne 연관관계를 제거하여 쓰기 성능 최적화 및 시스템 결합도 감소
      * - 이벤트 기반 비동기 적재를 위해 FK 없이 userId만 직접 저장
      */

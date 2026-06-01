@@ -25,6 +25,7 @@ public class SessionEventListener {
     private final AchievementService achievementService;
     private final AchievementNotifier achievementNotifier;
 
+    // 세션 종료 저장이 확정된 뒤 통계와 칭호를 후처리해 원 유스케이스 실패로 번지지 않도록 분리
     @Async("threadPoolTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleSessionStoppedEvent(SessionStoppedEvent event) {
@@ -51,6 +52,7 @@ public class SessionEventListener {
         log.info("Completed processing for session {}", event.getSessionId());
     }
 
+    // 로그 수정 직후 반영되어야 하는 칭호만 커밋 이후 비동기로 평가
     @Async("threadPoolTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleLogUpdatedEvent(LogUpdatedEvent event) {

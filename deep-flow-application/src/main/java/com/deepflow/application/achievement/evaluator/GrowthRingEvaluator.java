@@ -10,13 +10,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 누적 몰입 시간 기반 칭호 평가.
- * 유저의 전체 세션 시간 합계가 기준값을 넘으면 칭호를 부여함.
+ * 누적 몰입 시간 기반 칭호 평가
  */
 @Component
 public class GrowthRingEvaluator implements AchievementEvaluator {
 
-    /** 칭호 코드 → 최소 누적 시간(초) */
     private static final Map<String, Long> THRESHOLDS = new LinkedHashMap<>() {{
         put("G-01", 3_600L);       // 1시간
         put("G-02", 18_000L);      // 5시간

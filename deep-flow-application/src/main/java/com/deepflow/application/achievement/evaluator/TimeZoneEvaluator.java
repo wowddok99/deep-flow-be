@@ -10,8 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 세션 종료 시간대 기반 칭호 평가.
- * 특정 시간대에 세션을 완료한 누적 횟수를 기준으로 판정함.
+ * 세션 종료 시간대 기반 칭호 평가
  */
 @Component
 @RequiredArgsConstructor
@@ -25,7 +24,7 @@ public class TimeZoneEvaluator implements AchievementEvaluator {
         Long userId = context.userId();
         int hour = context.completedSession().getEndTime().getHour();
 
-        // 현재 세션의 종료 시간대에 해당하는 칭호만 체크 (불필요한 DB 조회 방지)
+        // 현재 세션의 종료 시간대만 조회해 불필요한 집계 쿼리 방지
         if (hour >= 5 && hour < 7) {
             long count = sessionRepository.countByUserIdAndEndTimeHourBetween(userId, 5, 7);
             if (!context.alreadyAchieved("T-01") && count >= 3) achieved.add("T-01");   // 얼리버드

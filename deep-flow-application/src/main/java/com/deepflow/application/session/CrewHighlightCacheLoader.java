@@ -23,8 +23,9 @@ import static com.deepflow.application.session.CrewHighlightService.MATURE_THRES
 import static com.deepflow.application.session.CrewHighlightService.RECENT_WINDOW;
 
 /**
- * 외부에서 직접 호출 금지 — CrewHighlightService 가 권한 체크 후 본 빈을 호출.
- * @Cacheable AOP 가 적용되려면 다른 빈 경계를 통해 호출되어야 함 (self-invocation 문제 회피).
+ * CrewHighlightService 의 권한 확인 이후 캐시 가능한 하이라이트 본문 로드
+ *
+ * 같은 서비스 내부 호출은 캐시 프록시를 거치지 않으므로 별도 빈으로 분리
  */
 @Component
 @RequiredArgsConstructor

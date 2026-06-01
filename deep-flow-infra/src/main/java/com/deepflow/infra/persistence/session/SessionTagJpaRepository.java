@@ -19,17 +19,14 @@ interface SessionTagJpaRepository extends JpaRepository<SessionTag, SessionTagId
 
     /**
      * Spring Data 의 derived 'deleteAllBy...' 는 SELECT + 단건 DELETE × N 을 발생시키므로
-     * 명시적으로 단일 bulk DELETE 로 교체. replaceAll 직후 saveAll 이 따라오니
-     * persistence context 정리를 위해 clearAutomatically/flushAutomatically 모두 활성.
+     * replaceAll 경로에서는 단일 bulk DELETE 로 교체
+     *
+     * 직후 saveAll 이 따라오므로 persistence context 정리를 위해 clearAutomatically/flushAutomatically 활성
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM SessionTag st WHERE st.sessionId = :sessionId")
     void deleteAllBySessionId(@Param("sessionId") Long sessionId);
 
-    /**
-     * 크루의 인기 태그 빈도 집계.
-     * shared_crew_id 가 동일하고 deleted_at IS NULL 인 세션의 태그만 카운트.
-     */
     @Query("""
             SELECT st.tag AS tag, COUNT(st) AS cnt
             FROM SessionTag st
@@ -57,9 +54,9 @@ interface SessionTagJpaRepository extends JpaRepository<SessionTag, SessionTagId
             Pageable pageable);
 
     /**
-     * 사용자가 가장 최근에 공유한 세션들의 태그를 distinct 한 채로 최신순 반환.
-     * 최신 공유 세션을 먼저 보고, 같은 태그가 이미 있으면 스킵하는 로직은 서비스에서 처리.
-     * tie-breaker: sharedAt 동률이면 sessionId desc → tag asc (composite PK 순서 보존).
+     * 최근 공유 세션 기준 distinct 태그 선정을 위해 서비스에서 중복 제거할 수 있는 순서로 조회
+     *
+     * sharedAt 동률이면 sessionId desc, tag asc 로 정렬해 결과 순서 고정
      */
     @Query("""
             SELECT st.tag, fs.sharedAt

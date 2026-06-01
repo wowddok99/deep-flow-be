@@ -15,28 +15,19 @@ public interface SessionReactionRepository {
 
     void delete(Long reactionId);
 
-    /**
-     * 세션의 특정 이모지 총 카운트.
-     */
     int countByEmoji(Long sessionId, ReactionEmoji emoji);
 
     /**
-     * 피드 batch 카운트 — sessionId 별 총 리액션 수 (이모지 무관).
+     * 피드 목록 조립에서 세션별 리액션 수 조회 N+1 방지
      */
     Map<Long, Integer> countBySessionIds(List<Long> sessionIds);
 
-    /**
-     * 세션의 이모지별 카운트 응답용.
-     */
     List<EmojiCount> aggregateBySession(Long sessionId);
 
-    /**
-     * 세션에서 본인이 누른 이모지 목록.
-     */
     List<ReactionEmoji> findReactedEmojisByUser(Long sessionId, Long userId);
 
     /**
-     * 세션의 모든 리액션을 createdAt 오름차순으로. emoji 별 reactor 집계용.
+     * 이모지별 반응자 목록이 생성 순서대로 안정적으로 보이도록 createdAt 오름차순 조회
      */
     List<SessionReaction> findAllBySession(Long sessionId);
 

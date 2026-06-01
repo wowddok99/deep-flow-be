@@ -2,27 +2,27 @@ package com.deepflow.application.exception;
 
 public enum ErrorCode {
 
-    // Auth
+    // 인증
     DUPLICATE_USERNAME(409, "Username already exists"),
     INVALID_CREDENTIALS(401, "Invalid username or password"),
     INVALID_TOKEN(401, "Invalid or expired token"),
 
-    // Session
+    // 세션
     SESSION_ALREADY_EXISTS(409, "An ongoing session already exists"),
     SESSION_NOT_DELETABLE(409, "Cannot delete an ongoing session"),
     SESSION_NOT_FOUND(404, "Session not found"),
 
-    // Crew shared sessions
+    // 크루 공유 세션
     SESSION_ALREADY_SHARED(409, "Session is already shared"),
     SESSION_NOT_SHARED(400, "Session is not shared"),
     SESSION_NOT_SHAREABLE(400, "Session must be COMPLETED with non-empty FocusLog content to be shared"),
     SESSION_NOT_IN_CREW(404, "Session is not shared to this crew"),
     TAG_LIMIT_EXCEEDED(400, "Tags must be at most 5"),
 
-    // Lock
+    // 락
     LOCK_ACQUISITION_FAILED(409, "Another request is being processed"),
 
-    // Crew
+    // 크루
     CREW_NOT_FOUND(404, "Crew not found"),
     CREW_ACCESS_DENIED(403, "Only crew owner can perform this action"),
     NOT_CREW_MEMBER(403, "You are not a member of this crew"),
@@ -34,29 +34,29 @@ public enum ErrorCode {
     CREW_MAX_MEMBERS_BELOW_CURRENT(409, "Max members cannot be lower than current member count"),
     CREW_NOT_PUBLIC(403, "This crew is not publicly joinable"),
 
-    // Reactions
+    // 리액션
     INVALID_REACTION_EMOJI(400, "Unsupported reaction emoji"),
 
-    // Comments
+    // 댓글
     COMMENT_NOT_FOUND(404, "Comment not found"),
     COMMENT_ACCESS_DENIED(403, "Comment access denied"),
     COMMENT_PARENT_MISMATCH(400, "Reply parent does not belong to the same session"),
 
-    // Notifications
+    // 알림
     NOTIFICATION_NOT_FOUND(404, "Notification not found"),
     NOTIFICATION_ACCESS_DENIED(403, "Notification access denied"),
 
-    // Search
+    // 검색
     SEARCH_QUERY_TOO_SHORT(400, "Search query must be at least 2 characters"),
     SEARCH_TYPE_INVALID(400, "Unsupported search type"),
 
-    // Pagination
+    // 페이지네이션
     INVALID_CURSOR(400, "Invalid cursor token"),
 
-    // Rate limit
+    // 요청 제한
     RATE_LIMIT_EXCEEDED(429, "Too many requests"),
 
-    // Common
+    // 공통
     RESOURCE_NOT_FOUND(404, "Resource not found"),
     INTERNAL_ERROR(500, "Internal server error");
 

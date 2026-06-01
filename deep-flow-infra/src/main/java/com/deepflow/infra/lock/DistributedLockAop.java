@@ -47,6 +47,7 @@ public class DistributedLockAop {
                 throw new LockAcquisitionException();
             }
 
+            // 락 안에서 트랜잭션을 시작하고 커밋까지 끝내야 락 해제 후 미커밋 상태가 노출되지 않음
             return aopForTransaction.proceed(joinPoint);
         } catch (InterruptedException e) {
             log.warn("분산락 대기 중 인터럽트: key={}, method={}", key, method.getName(), e);

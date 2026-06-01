@@ -31,6 +31,11 @@ public class OutboxProcessor {
     @Value("${app.outbox.worker.max-retry:3}")
     private int maxRetry;
 
+    /**
+     * 저장된 아웃박스 이벤트를 검색 인덱스에 반영
+     *
+     * 처리 실패 이벤트는 재시도 한도까지 남겨 다음 배치에서 다시 처리
+     */
     @Transactional
     public int processBatch() {
         List<OutboxEvent> events = outboxRepository.findPending(batchSize);
@@ -54,6 +59,7 @@ public class OutboxProcessor {
     private void handle(OutboxEvent event) throws Exception {
         OutboxEventType type = event.getEventType();
         switch (type) {
+            // 태그 변경도 검색 결과에 노출되므로 공유 이벤트와 같은 색인 경로 사용
             case SESSION_SHARED, SESSION_TAGS_UPDATED ->
                     sessionIndexer.index(objectMapper.readValue(event.getPayload(), SessionSharedPayload.class));
             case SESSION_UNSHARED -> {

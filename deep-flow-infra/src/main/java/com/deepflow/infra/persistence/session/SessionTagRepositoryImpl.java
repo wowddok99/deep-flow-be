@@ -24,7 +24,7 @@ public class SessionTagRepositoryImpl implements SessionTagRepository {
         jpa.deleteAllBySessionId(sessionId);
         if (normalizedTags == null || normalizedTags.isEmpty()) return;
 
-        // 유효하지 않은 태그(Null, 빈 문자열, 중복)가 DB에 적재되지 않도록 한 번 더 필터링
+        // API 밖에서 호출돼도 잘못된 태그가 저장되지 않도록 저장 직전 재검증
         List<SessionTag> entities = normalizedTags.stream()
                 .filter(t -> t != null && !t.isBlank())
                 .distinct()
@@ -64,7 +64,7 @@ public class SessionTagRepositoryImpl implements SessionTagRepository {
     @Override
     public List<TagCount> suggestTagsByPrefix(Long crewId, String prefix, int limit) {
         if (prefix == null || prefix.isBlank()) return List.of();
-        // 사용자가 입력한 '%', '_' 문자가 검색 와일드카드로 오동작하지 않도록 이스케이프 처리
+        // 사용자 입력 %, _ 문자가 LIKE 와일드카드로 동작하지 않도록 이스케이프
         String escaped = prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
         return jpa.suggestTagsByPrefix(crewId, escaped + "%", PageRequest.of(0, limit)).stream()
                 .map(row -> new TagCount((String) row[0], ((Number) row[1]).longValue()))
@@ -73,8 +73,8 @@ public class SessionTagRepositoryImpl implements SessionTagRepository {
 
     @Override
     public List<String> findRecentTagsByUserId(Long userId, int limit) {
-        // DB 레벨의 중복 제거(distinct)와 정렬을 함께 쓰면 발생하는 성능/정확도 이슈를 피하기 위해 메모리에서 중복을 제거
-        // 세션당 평균 5개의 태그를 쓴다고 가정하여 여유 있게 조회
+        // 최신순 정렬을 보존하기 위해 DB distinct 대신 메모리에서 중복 제거
+        // 세션당 평균 태그 수를 기준으로 limit 보다 여유 있게 조회
         int fetchSize = Math.max(limit * 5, limit);
         List<Object[]> rows = jpa.findRecentTagsByUserId(userId, PageRequest.of(0, fetchSize));
 

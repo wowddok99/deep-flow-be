@@ -13,10 +13,9 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 이미지 활용 기반 칭호 평가.
- * 이미지 첨부 로그 수와 총 이미지 수를 기준으로 판정함.
- * LOG_UPDATE 트리거: V-02(현재 세션 이미지 >= 3)만 실시간 감지 가능.
- * V-01, V-03~V-05는 누적 쿼리가 COMPLETED 필터링이므로 SESSION_STOP에서만 유효.
+ * 이미지 활용 기반 칭호 평가
+ *
+ * 현재 세션 이미지 수는 로그 수정 즉시 평가하고, 누적 이미지 집계는 세션 종료 후 평가
  */
 @Component
 @RequiredArgsConstructor
@@ -35,12 +34,10 @@ public class VisualEvaluator implements AchievementEvaluator {
         Long userId = context.userId();
         FocusLog log = context.completedSession().getFocusLog();
 
-        // V-02: 현재 세션 객체 직접 참조, LOG_UPDATE에서도 즉시 감지 가능
         if (!context.alreadyAchieved("V-02") && log.getImages() != null && log.getImages().size() >= 3) {
             achieved.add("V-02");
         }
 
-        // V-01, V-03~V-05: 누적 쿼리 기반이므로 SESSION_STOP에서만 유효
         if (context.triggerType() == TriggerType.SESSION_STOP) {
             long logsWithImages = sessionRepository.countByUserIdWithImages(userId);
             long totalImages = sessionRepository.countTotalImagesByUserId(userId);

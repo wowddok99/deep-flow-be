@@ -7,11 +7,9 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 
 /**
- * 크루 피드 keyset 페이지네이션 커서.
- * 정렬 키 (sharedAt DESC, id DESC) 와 동일한 키를 보존해 직전 페이지의 마지막 위치를 가리킨다.
+ * 크루 피드 정렬 키 기반 페이지네이션 커서
  *
- * 외부 표면은 불투명한 토큰으로만 노출 — 클라이언트는 받은 문자열을 그대로 다음 요청에 실어 보낸다.
- * 직렬화 형식은 내부 구현 디테일이며 향후 정렬 키 추가 시에도 API 시그니처를 흔들지 않기 위함.
+ * 정렬 키를 불투명 토큰으로 감춰 향후 직렬화 형식 변경이 API 시그니처에 노출되지 않도록 유지
  */
 public record SharedFeedCursor(LocalDateTime sharedAt, Long id) {
 

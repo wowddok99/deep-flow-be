@@ -11,13 +11,13 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 /**
- * 단일 세션 몰입 시간 기반 칭호 평가.
- * 한 번의 세션에서 연속으로 집중한 시간이 기준값을 넘으면 칭호를 부여함.
+ * 단일 세션 몰입 시간 기반 칭호 평가
+ *
+ * 진행 중 세션은 현재 시각까지의 경과 시간으로 실시간 칭호를 판정
  */
 @Component
 public class DeepDiveEvaluator implements AchievementEvaluator {
 
-    /** 칭호 코드별 최소 세션 시간(초) */
     private static final Map<String, Long> THRESHOLDS = new LinkedHashMap<>() {{
         put("D-00", 10L);       // 10초 (스타터)
         put("D-01", 300L);      // 5분

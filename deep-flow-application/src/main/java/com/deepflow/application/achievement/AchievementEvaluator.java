@@ -8,8 +8,9 @@ public interface AchievementEvaluator {
     List<String> evaluate(AchievementContext context);
 
     /**
-     * 이 Evaluator가 반응하는 트리거 타입.
-     * 기본값은 SESSION_STOP만 (기존 동작 유지).
+     * 평가기가 반응하는 트리거 타입
+     *
+     * 기본값은 기존 세션 종료 시점 평가와의 호환성을 위해 SESSION_STOP
      */
     default Set<TriggerType> supportedTriggers() {
         return Set.of(TriggerType.SESSION_STOP);

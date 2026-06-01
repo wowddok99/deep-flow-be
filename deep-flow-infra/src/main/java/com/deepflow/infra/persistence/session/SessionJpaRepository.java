@@ -85,8 +85,6 @@ interface SessionJpaRepository extends JpaRepository<FocusSession, Long> {
     @Query("SELECT DISTINCT s.user.id FROM FocusSession s WHERE s.user.id IN :userIds AND s.status = 'ONGOING'")
     List<Long> findOngoingUserIdsByUserIds(@Param("userIds") List<Long> userIds);
 
-    // --- Crew shared sessions ---
-
     @Query("""
             SELECT s FROM FocusSession s
             JOIN FETCH s.user
@@ -164,8 +162,6 @@ interface SessionJpaRepository extends JpaRepository<FocusSession, Long> {
               AND s.status = 'ONGOING'
             """)
     List<FocusSession> findOngoingSessionsByUserIds(@Param("userIds") List<Long> userIds);
-
-    // --- Crew highlight ---
 
     @Query("""
             SELECT COUNT(s) FROM FocusSession s

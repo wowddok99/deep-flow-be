@@ -13,8 +13,9 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * 페이지 진입 시 1회 호출되는 라이브 프레즌스 스냅샷.
- * 이후 SSE (CrewPresenceController /stream) 가 변동 사항을 실시간 푸시.
+ * 크루 페이지 진입 시 현재 집중 중인 멤버 스냅샷 조회
+ *
+ * 이후 변동 사항은 SSE 스트림에서 실시간 푸시
  */
 @Service
 @RequiredArgsConstructor

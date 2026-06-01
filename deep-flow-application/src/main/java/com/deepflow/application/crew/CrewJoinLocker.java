@@ -6,16 +6,12 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 /**
- * 크루 가입 임계구역 전용 빈.
+ * 크루 가입 임계구역 전용 빈
  *
- * CrewService.joinByCode/joinPublic 가 같은 클래스의 메서드를 직접 호출하면 Spring AOP 프록시를
- * 우회해서 @DistributedLock 이 적용되지 않는다. 이 함정을 피하기 위해 별도 빈으로 분리한다.
+ * CrewService 내부 호출은 Spring AOP 프록시를 거치지 않아 분산 락이 적용되지 않으므로 별도 빈으로 분리
+ * 외부 트랜잭션이 먼저 열리면 락 해제 전에 커밋이 끝나지 않을 수 있어 이 빈의 진입점에는 @Transactional 을 두지 않음
  *
- * 또한 진입 시점에 외부 트랜잭션이 없어야 AopForTransaction(REQUIRES_NEW) 의
- * "락 → TX 시작 → TX commit → 락 해제" 순서가 보장되므로, 이 메서드 자체에는 @Transactional 을
- * 두지 않는다 (REQUIRES_NEW 가 알아서 시작·커밋).
- *
- * CrewService 와 양방향 의존이라 @Lazy 로 순환을 끊는다 — 첫 호출 시점에 실제 빈이 해결됨.
+ * CrewService 와 양방향 의존이라 @Lazy 로 순환을 끊음
  */
 @Component
 public class CrewJoinLocker {

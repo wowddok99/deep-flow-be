@@ -6,8 +6,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * SessionRepository 의 크루 피드 조회 결과. (sharedAt, id) 복합 커서를 보존해
- * 다음 페이지 호출 시 정렬 키와 일치하는 keyset 조건으로 이어갈 수 있게 한다.
+ * 크루 피드 조회 결과와 다음 페이지 정렬 키 보관
  */
 public record SharedFocusSessionSlice(
         List<FocusSession> content,

@@ -43,14 +43,14 @@ public class SessionShareService {
     private final OutboxPublisher outboxPublisher;
 
     /**
-     * SessionShareLocker 를 통해서만 호출. 외부 진입 금지 (락 우회 위험).
-     * 분산 락 안에서 REQUIRES_NEW TX 가 시작/커밋된다.
+     * SessionShareLocker 가 분산 락을 획득한 뒤에만 호출되는 공유 본문
+     *
+     * 외부에서 직접 호출하면 중복 공유 검증을 락 없이 통과할 수 있으므로 SessionShareLocker 를 통해 호출
      */
     @CacheEvict(value = "sessions", key = "#sessionId", beforeInvocation = true)
     @Transactional
     public SharedSessionInfo shareLockedInternal(Long userId, Long sessionId, ShareSessionCommand cmd) {
-        // 의도적 404 (not 403) — 다른 유저 세션 존재 여부를 노출하지 않기 위함.
-        // findByIdAndUserId 가 권한+존재를 한 쿼리에 묶음. findById + if 분기로 분리하면 회귀.
+        // 다른 유저의 세션 존재 여부가 노출되지 않도록 권한과 존재 확인을 한 쿼리로 처리
         FocusSession session = sessionRepository.findByIdAndUserId(sessionId, userId)
                 .orElseThrow(SessionNotFoundException::new);
 
@@ -67,6 +67,7 @@ public class SessionShareService {
         sessionRepository.save(session);
         tagRepository.replaceAll(sessionId, normalized);
 
+        // 검색 인덱싱은 아웃박스로 넘겨 공유 저장 트랜잭션과 외부 검색 반영을 분리
         outboxPublisher.publish(OutboxEventType.SESSION_SHARED, sessionId, new SessionSharedPayload(sessionId));
         eventPublisher.publishEvent(new SessionSharedEvent(sessionId, cmd.crewId(), userId, normalized));
         log.info("세션 공유: sessionId={}, crewId={}, tags={}", sessionId, cmd.crewId(), normalized);
@@ -85,7 +86,7 @@ public class SessionShareService {
         Long crewId = session.getSharedCrewId();
         session.unshare();
         sessionRepository.save(session);
-        // 철회 시 태그 row 도 삭제. 재공유는 새 태그를 입력하는 흐름이라 이전 태그 보존은 stale.
+        // 재공유는 새 태그 입력 흐름이라 철회 시 기존 태그를 함께 제거
         tagRepository.deleteAllBySessionId(sessionId);
 
         outboxPublisher.publish(OutboxEventType.SESSION_UNSHARED, sessionId, new SessionUnsharedPayload(sessionId));

@@ -17,8 +17,7 @@ import lombok.NoArgsConstructor;
 @Table(
         name = "session_tag",
         indexes = {
-                // PK 가 (session_id, tag) 라 session_id 단일 조회는 PK leftmost prefix 로 처리됨.
-                // tag 단일 조회 (인기 태그/자동완성/필터) 는 별도 인덱스 필요.
+                // 복합 기본키의 첫 컬럼이 session_id 라서 tag 단일 조회에는 별도 인덱스 필요
                 @Index(name = "idx_session_tag_tag", columnList = "tag")
         }
 )

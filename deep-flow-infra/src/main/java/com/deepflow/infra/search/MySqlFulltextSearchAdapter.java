@@ -33,6 +33,7 @@ public class MySqlFulltextSearchAdapter implements SessionSearchPort {
 
     @SuppressWarnings("unchecked")
     private List<SearchResultInfo> searchBySession(Long crewId, String q, int offset, int size) {
+        // 제목과 요약의 전문 검색 점수에 태그 매칭 점수를 더해 세션 검색 관련도를 보정
         String sql = """
                 SELECT fs.id AS sessionId,
                        fl.title AS title,
@@ -77,6 +78,7 @@ public class MySqlFulltextSearchAdapter implements SessionSearchPort {
 
     @SuppressWarnings("unchecked")
     private List<SearchResultInfo> searchByTag(Long crewId, String q, int offset, int size) {
+        // 태그 검색은 자동완성/필터와 같은 정규화 값을 쓰므로 정확히 일치하는 태그만 조회
         String sql = """
                 SELECT fs.id AS sessionId,
                        fl.title AS title,

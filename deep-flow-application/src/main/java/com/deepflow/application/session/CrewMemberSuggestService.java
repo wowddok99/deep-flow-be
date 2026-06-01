@@ -17,8 +17,7 @@ public class CrewMemberSuggestService {
     private final CrewMemberRepository crewMemberRepository;
 
     /**
-     * 멘션 자동완성. 본인 제외, prefix 빈 문자열은 빈 리스트.
-     * 멤버십 검사 후 username/name prefix 매칭.
+     * 크루 댓글 멘션 자동완성을 위해 본인을 제외한 멤버를 입력 접두어로 검색
      */
     public List<MemberSuggestionInfo> suggestMembers(Long userId, Long crewId, String prefix, int limit) {
         if (!crewMemberRepository.existsByCrewIdAndUserId(crewId, userId)) {

@@ -52,14 +52,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String resolveToken(HttpServletRequest request) {
-        // Authorization 헤더에서 Bearer 토큰 추출
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
 
-        // SSE 엔드포인트용: query parameter에서 토큰 추출
-        // 브라우저 EventSource API는 커스텀 헤더를 지원하지 않으므로 ?token= 방식 지원
+        // EventSource 는 커스텀 헤더를 보낼 수 없어 SSE 연결에서 쿼리 토큰 허용
         String tokenParam = request.getParameter("token");
         if (StringUtils.hasText(tokenParam)) {
             return tokenParam;

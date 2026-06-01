@@ -10,8 +10,9 @@ import java.util.Map;
 import java.util.concurrent.*;
 
 /**
- * 세션 시작 시 시간 기반 칭호 체크를 정확한 타이밍에 예약하는 스케줄러.
- * 폴링 대신 임계치 시점에 맞춰 1회 실행하므로 딜레이가 거의 없음.
+ * 세션 시작 시 시간 기반 칭호 체크를 임계치 시점에 맞춰 예약
+ *
+ * 폴링 대신 예약 실행을 사용해 장시간 세션 칭호 반영 지연 최소화
  */
 @Slf4j
 @Component
@@ -21,10 +22,9 @@ public class SessionTimeScheduler {
     private final AchievementNotifier achievementNotifier;
     private final ScheduledExecutorService executor;
 
-    // 세션별 예약된 Future 목록 (세션 종료 시 취소용)
+    // 세션 종료 시 남은 예약을 취소하기 위해 세션별 Future 보관
     private final Map<Long, List<ScheduledFuture<?>>> scheduledTasks = new ConcurrentHashMap<>();
 
-    /** 칭호 체크 예약 시점(초) */
     private static final long[] CHECK_POINTS = {
             10,      // D-00
             300,     // D-01 (5분)
@@ -48,7 +48,6 @@ public class SessionTimeScheduler {
         });
     }
 
-    /** 세션 시작 시 호출하여 각 임계치 시점에 칭호 체크 예약 */
     public void scheduleForSession(Long userId, Long sessionId) {
         List<ScheduledFuture<?>> futures = new CopyOnWriteArrayList<>();
 
@@ -65,7 +64,6 @@ public class SessionTimeScheduler {
         log.debug("시간 칭호 체크 예약: sessionId={}, checkPoints={}개", sessionId, CHECK_POINTS.length);
     }
 
-    /** 세션 종료 시 호출하여 남은 예약 취소 */
     public void cancelForSession(Long sessionId) {
         List<ScheduledFuture<?>> futures = scheduledTasks.remove(sessionId);
         if (futures != null) {

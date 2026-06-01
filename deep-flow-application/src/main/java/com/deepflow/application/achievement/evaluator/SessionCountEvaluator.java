@@ -10,12 +10,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 누적 세션 완료 횟수 기반 칭호 평가.
+ * 누적 세션 완료 횟수 기반 칭호 평가
  */
 @Component
 public class SessionCountEvaluator implements AchievementEvaluator {
 
-    /** 칭호 코드 → 최소 세션 완료 횟수 */
     private static final Map<String, Long> THRESHOLDS = new LinkedHashMap<>() {{
         put("S-01", 5L);
         put("S-02", 10L);

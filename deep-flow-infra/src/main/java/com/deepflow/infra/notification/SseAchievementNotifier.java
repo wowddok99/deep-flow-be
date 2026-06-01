@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 
-/** 칭호 달성 시 SSE로 클라이언트에 알림 전송 (AchievementNotifier 구현체) */
 @Component
 @RequiredArgsConstructor
 public class SseAchievementNotifier implements AchievementNotifier {

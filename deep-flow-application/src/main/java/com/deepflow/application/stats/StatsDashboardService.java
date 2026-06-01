@@ -117,7 +117,7 @@ public class StatsDashboardService {
 
         List<DayOfWeekStatsInfo> result = new ArrayList<>();
         for (DayOfWeek dow : order) {
-            // MySQL DAYOFWEEK(일=1, 월=2...) 인덱스 변환 로직
+            // Java DayOfWeek 와 MySQL DAYOFWEEK 의 시작 요일 차이 보정
             int mysqlDow = (dow == DayOfWeek.SUNDAY) ? 1 : dow.getValue() + 1;
             DayOfWeekStats row = byDow.get(mysqlDow);
 

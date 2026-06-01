@@ -2,7 +2,7 @@ package com.deepflow.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-@JsonInclude(JsonInclude.Include.NON_NULL) // null 필드는 JSON에서 제외
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record CommonResponse<T>(
         boolean success,
         T data,

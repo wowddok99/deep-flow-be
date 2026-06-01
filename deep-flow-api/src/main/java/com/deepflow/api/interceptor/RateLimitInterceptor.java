@@ -51,12 +51,12 @@ public class RateLimitInterceptor implements HandlerInterceptor {
                 response.addHeader("X-Rate-Limit-Penalty", "true");
             }
 
-            // IP 기반 1차 검증
+            // 익명 요청도 제한하기 위해 IP 버킷을 항상 먼저 확인
             Bucket ipBucket = rateLimiter.resolveBucket(ipKey, isPenalty);
             ConsumptionProbe ipProbe = ipBucket.tryConsumeAndReturnRemaining(cost);
 
             if (ipProbe.isConsumed()) {
-                // IP 통과 시, 로그인 유저는 User Bucket으로 2차 검증
+                // 로그인 사용자는 IP 공유 환경에서도 계정 단위 한도를 별도로 적용
                 if (userKey != null) {
                     Bucket userBucket = rateLimiter.resolveBucket(userKey, false);
                     ConsumptionProbe userProbe = userBucket.tryConsumeAndReturnRemaining(cost);
@@ -82,8 +82,8 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     }
 
     private boolean handleRateLimitExceeded(HttpServletResponse response, long nanosToWait, String key) throws IOException {
-        // sendError() 를 쓰면 Tomcat 이 /error 로 forward → Spring Security 필터 재진입 → 401 로 변조됨.
-        // 직접 응답 작성으로 우회하면서 다른 에러 응답들과 동일한 {success,error{code,message}} 포맷 유지.
+        // sendError 사용 시 /error forward 로 Spring Security 필터가 재진입해 401 로 변조될 수 있음
+        // 직접 응답을 작성해 다른 에러 응답과 동일한 JSON 포맷 유지
         long waitForRefill = nanosToWait / 1_000_000_000;
         response.setStatus(ErrorCode.RATE_LIMIT_EXCEEDED.getStatus());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -118,11 +118,11 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         return null;
     }
 
-    // 프록시 환경에서 실제 클라이언트 IP 추출
+    // 프록시 뒤에서 동작할 때 원 클라이언트 기준으로 rate limit 적용
     private String getClientIp(HttpServletRequest request) {
         String ip = request.getHeader("X-Forwarded-For");
         if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
-            // X-Forwarded-For는 "client, proxy1, proxy2" 형태일 수 있음 → 첫 번째가 실제 IP
+            // X-Forwarded-For 는 첫 값이 원 클라이언트 IP
             return ip.split(",")[0].trim();
         }
         ip = request.getHeader("Proxy-Client-IP");

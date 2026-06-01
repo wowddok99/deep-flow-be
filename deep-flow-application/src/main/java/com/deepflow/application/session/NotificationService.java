@@ -32,15 +32,9 @@ public class NotificationService {
     private final SessionRepository sessionRepository;
 
     /**
-     * 미읽음 멘션 알림 (cursor 페이지네이션).
+     * 미읽음 멘션 알림을 이동 경로 정보와 함께 조회
      *
-     * Deep-link UX 를 위해 한 응답에 다음을 묶어 반환:
-     *   mention -> comment(작성자, 본문) -> session(sharedCrewId)
-     *
-     * Batch fetch 로 N+1 회피:
-     *   1) mention 조회
-     *   2) commentIds → comments + user (1쿼리)
-     *   3) sessionIds → sessions (1쿼리)
+     * 멘션, 댓글, 세션을 한 번에 묶어 알림 목록 조립 시 N+1 조회 방지
      */
     public SliceResult<MentionInfo> getUnread(Long userId, Long cursorId, int size) {
         SliceResult<CommentMention> slice = mentionRepository.findUnreadByUserId(userId, cursorId, size);

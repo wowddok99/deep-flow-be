@@ -34,7 +34,7 @@ public class SessionTagService {
         }
         if (prefix == null || prefix.isBlank()) return List.of();
 
-        // 사용자가 'JPA' 입력해도 'jpa' prefix 로 매칭되도록 정규화
+        // 사용자가 'JPA'를 입력해도 저장된 'jpa' 태그와 매칭되도록 정규화
         String normalized = tagNormalizer.normalize(prefix);
         if (normalized.isBlank()) return List.of();
 

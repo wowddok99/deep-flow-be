@@ -18,10 +18,6 @@ public record MentionInfo(
 ) {
     private static final int PREVIEW_MAX_LENGTH = 100;
 
-    /**
-     * Deep-link 메타까지 채운 풀 매핑.
-     * comment / session 이 null 이면 (정합성 어긋난 비정상 상태) 가능한 부분만 채우고 나머지는 null.
-     */
     public static MentionInfo of(CommentMention mention, SessionComment comment, FocusSession session) {
         Long sessionId = comment != null ? comment.getSessionId() : null;
         Long crewId = session != null ? session.getSharedCrewId() : null;

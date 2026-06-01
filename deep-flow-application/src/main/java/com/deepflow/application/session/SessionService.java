@@ -104,6 +104,7 @@ public class SessionService {
     public void stopSession(Long userId, Long id) {
         FocusSession session = getOwnedSession(id, userId);
         session.stop(LocalDateTime.now());
+        // 종료된 세션은 더 이상 시간 기반 칭호 예약이 필요 없으므로 남은 작업 취소
         sessionTimeScheduler.cancelForSession(id);
         log.info("세션 종료: sessionId={}, userId={}, duration={}s", id, userId, session.getDurationSeconds());
 

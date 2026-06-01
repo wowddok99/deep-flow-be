@@ -27,6 +27,7 @@ public class CommentNotificationListener {
     private final CrewMemberRepository crewMemberRepository;
     private final UserRepository userRepository;
 
+    // 댓글 저장이 확정된 뒤 알림을 보내야 알림 클릭 시 이동할 댓글이 항상 존재
     @Async("threadPoolTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void on(SessionCommentCreatedEvent e) {
@@ -38,6 +39,7 @@ public class CommentNotificationListener {
 
         Long ownerId = session.getUser() != null ? session.getUser().getId() : null;
         boolean ownerNotified = false;
+        // 작성자 본인 댓글은 내 글 댓글 알림에서 제외
         if (ownerId != null && !ownerId.equals(e.getActorUserId())) {
             notifier.notifyTo(ownerId, payload(
                     CommentNotificationPayload.Type.COMMENT_ON_YOUR_POST,
@@ -51,6 +53,7 @@ public class CommentNotificationListener {
         for (Long uid : e.getMentionedUserIds()) {
             if (uid.equals(e.getActorUserId())) continue;
             if (!crewMemberIds.contains(uid)) continue;
+            // 글 작성자가 이미 댓글 알림을 받았다면 같은 댓글의 멘션 알림은 중복 발송하지 않음
             if (ownerNotified && uid.equals(ownerId)) continue;
             notifier.notifyTo(uid, payload(
                     CommentNotificationPayload.Type.MENTION,

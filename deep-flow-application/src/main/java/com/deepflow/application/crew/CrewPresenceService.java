@@ -29,6 +29,7 @@ public class CrewPresenceService {
     private final UserRepository userRepository;
     private final CrewPresenceNotifier notifier;
 
+    // 세션 상태 변경 커밋 후 전파해야 수신자가 조회하는 현재 활동 수와 이벤트가 어긋나지 않음
     @Async("threadPoolTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onSessionStarted(SessionStartedEvent event) {

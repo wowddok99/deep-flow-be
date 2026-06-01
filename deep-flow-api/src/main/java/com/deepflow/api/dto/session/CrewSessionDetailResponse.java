@@ -10,7 +10,7 @@ public record CrewSessionDetailResponse(
         Long sessionId,
         UserBrief user,
         String title,
-        // Tiptap content — DB 에는 JSON 문자열로 저장, 응답에는 파싱된 트리로 노출 (FE 가 setContent 에 바로 넣을 수 있도록).
+        // 프론트에서 Tiptap setContent 에 바로 넣을 수 있도록 파싱된 JSON 트리로 노출
         JsonNode content,
         Long durationSeconds,
         LocalDateTime sharedAt,

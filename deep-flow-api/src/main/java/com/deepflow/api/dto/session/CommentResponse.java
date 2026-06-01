@@ -18,8 +18,7 @@ public record CommentResponse(
     public record Author(Long id, String name) {}
 
     /**
-     * 본문 안의 '@username' 을 chip 스타일로 강조하기 위한 정보.
-     * 클라이언트는 mentions 의 username 집합과 매칭되는 토큰만 강조 처리한다.
+     * 댓글 본문에서 실제 멤버 멘션만 강조하기 위한 사용자 정보
      */
     public record Mention(Long userId, String username, String name) {}
 

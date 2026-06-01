@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-/** 히든 칭호 평가 (자정 경계, 복귀, 완벽주의, 기록 폭주 등 특수 조건) */
+/** 일반 진행도보다 특정 사용 패턴에 가까운 히든 칭호 평가 */
 @Component
 @RequiredArgsConstructor
 public class HiddenEvaluator implements AchievementEvaluator {
@@ -37,8 +37,7 @@ public class HiddenEvaluator implements AchievementEvaluator {
         FocusLog log = session.getFocusLog();
         TriggerType trigger = context.triggerType();
 
-        // H-01: 자정의 경계인 - 23:50 이전 시작, 현재(또는 종료) 시각이 00:10 이후
-        // TIME_CHECK / SESSION_STOP 모두에서 감지
+        // 자정 경계 세션은 진행 중 체크와 종료 체크 모두에서 감지
         if (!context.alreadyAchieved("H-01") && trigger != TriggerType.LOG_UPDATE) {
             int startHour = session.getStartTime().getHour();
             int startMin = session.getStartTime().getMinute();
@@ -55,8 +54,7 @@ public class HiddenEvaluator implements AchievementEvaluator {
             }
         }
 
-        // H-03: 완벽주의자 - 제목 + 본문 1000자 + 요약 + 이미지
-        // LOG_UPDATE / SESSION_STOP에서 감지 (현재 세션 객체 직접 참조)
+        // 로그 완성도 계열 칭호는 저장 직후에도 반영되어야 하므로 현재 세션 객체 기준으로 평가
         if (!context.alreadyAchieved("H-03") && trigger != TriggerType.TIME_CHECK) {
             boolean hasTitle = log.getTitle() != null && !log.getTitle().isBlank();
             boolean hasContent = log.getContent() != null && log.getContent().length() >= 1000;
@@ -65,17 +63,14 @@ public class HiddenEvaluator implements AchievementEvaluator {
             if (hasTitle && hasContent && hasSummary && hasImages) achieved.add("H-03");
         }
 
-        // H-08: 기록 폭주 - 본문 5000자 이상
-        // LOG_UPDATE / SESSION_STOP에서 감지 (현재 세션 객체 직접 참조)
         if (!context.alreadyAchieved("H-08") && trigger != TriggerType.TIME_CHECK) {
             if (log.getContent() != null && log.getContent().length() >= 5000) {
                 achieved.add("H-08");
             }
         }
 
-        // 아래 칭호들은 SESSION_STOP에서만 평가 (누적 쿼리/종료 시각 기반)
+        // 누적 쿼리와 종료 시각 기반 칭호는 세션 종료 후 확정된 데이터로만 평가
         if (trigger == TriggerType.SESSION_STOP) {
-            // H-02: 불사조 - 7일 이상 미접속 후 복귀
             if (!context.alreadyAchieved("H-02")) {
                 int gapDays = 0;
                 for (int i = 1; i <= 30; i++) {
@@ -91,7 +86,6 @@ public class HiddenEvaluator implements AchievementEvaluator {
                 if (gapDays >= 7) achieved.add("H-02");
             }
 
-            // H-04: 첫날의 열정 - 가입 당일 3세션 이상
             if (!context.alreadyAchieved("H-04")) {
                 LocalDate joinDate = context.userCreatedDate();
                 if (LocalDate.now().equals(joinDate)) {
@@ -102,14 +96,12 @@ public class HiddenEvaluator implements AchievementEvaluator {
                 }
             }
 
-            // H-05: 더블 마라톤 - 하루에 2시간 이상 세션 2회
             if (!context.alreadyAchieved("H-05")) {
                 long count = sessionRepository.countByUserIdAndDateAndMinDuration(
                         context.userId(), LocalDate.now(), 7200L);
                 if (count >= 2) achieved.add("H-05");
             }
 
-            // H-06: 고요한 새벽 - 새벽 3~4시에 2시간 이상 세션
             if (!context.alreadyAchieved("H-06")) {
                 int endHour = session.getEndTime().getHour();
                 if (endHour >= 3 && endHour < 5 && session.getDurationSeconds() >= 7200) {
@@ -117,7 +109,6 @@ public class HiddenEvaluator implements AchievementEvaluator {
                 }
             }
 
-            // H-07: 10의 법칙 - 세션 10회 + 10시간 + 로그 10개
             if (!context.alreadyAchieved("H-07")) {
                 boolean sessions10 = context.totalSessions() >= 10;
                 boolean hours10 = context.totalDurationSeconds() >= 36_000;

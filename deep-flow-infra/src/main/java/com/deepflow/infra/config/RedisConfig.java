@@ -27,6 +27,7 @@ public class RedisConfig {
     @Value("${app.cache.ttl-minutes:60}")
     private long cacheTtlMinutes;
 
+    // 캐시 버전을 키 앞에 붙여 배포나 응답 구조 변경 시 기존 캐시를 한 번에 우회
     @Value("${app.cache.version:v1}")
     private String cacheVersion;
 
@@ -44,6 +45,7 @@ public class RedisConfig {
         Jackson2JsonRedisSerializer<SessionDetailInfo> sessionSerializer =
                 new Jackson2JsonRedisSerializer<>(mapper, SessionDetailInfo.class);
 
+        // 세션 상세는 수정 가능성이 있어 기본 TTL 설정을 따름
         RedisCacheConfiguration sessionConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .prefixCacheNameWith(cacheVersion + "::")
                 .serializeKeysWith(SerializationPair.fromSerializer(new StringRedisSerializer()))
@@ -54,6 +56,7 @@ public class RedisConfig {
                 new Jackson2JsonRedisSerializer<>(mapper,
                         mapper.getTypeFactory().constructCollectionType(List.class, HourlyDistributionInfo.class));
 
+        // 시간대 분포는 집계 비용이 크고 당일 중 급격히 변하지 않아 하루 동안 재사용
         RedisCacheConfiguration hourlyConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .prefixCacheNameWith(cacheVersion + "::")
                 .serializeKeysWith(SerializationPair.fromSerializer(new StringRedisSerializer()))
@@ -63,6 +66,7 @@ public class RedisConfig {
         Jackson2JsonRedisSerializer<CrewHighlightInfo> highlightSerializer =
                 new Jackson2JsonRedisSerializer<>(mapper, CrewHighlightInfo.class);
 
+        // 크루 하이라이트는 공유와 리액션 이벤트에서 무효화되므로 짧은 TTL로 보조 만료
         RedisCacheConfiguration highlightConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .prefixCacheNameWith(cacheVersion + "::")
                 .serializeKeysWith(SerializationPair.fromSerializer(new StringRedisSerializer()))

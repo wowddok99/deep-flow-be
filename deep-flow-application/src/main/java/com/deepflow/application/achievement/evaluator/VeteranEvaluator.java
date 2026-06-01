@@ -18,7 +18,7 @@ public class VeteranEvaluator implements AchievementEvaluator {
         long daysSinceJoin = ChronoUnit.DAYS.between(context.userCreatedDate(), LocalDate.now());
         long totalSessions = context.totalSessions();
 
-        // 가입 경과일 + 최소 세션 수 동시 충족 필요
+        // 단순 가입 유지가 아니라 실제 사용 이력이 있는 계정만 지급
         if (!context.alreadyAchieved("E-01") && daysSinceJoin >= 7 && totalSessions >= 1) achieved.add("E-01");     // 7일 + 1회
         if (!context.alreadyAchieved("E-02") && daysSinceJoin >= 30 && totalSessions >= 5) achieved.add("E-02");    // 30일 + 5회
         if (!context.alreadyAchieved("E-03") && daysSinceJoin >= 90 && totalSessions >= 20) achieved.add("E-03");   // 90일 + 20회

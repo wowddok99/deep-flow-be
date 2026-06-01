@@ -7,7 +7,7 @@ import java.util.List;
 public interface SessionSearchPort {
 
     /**
-     * 크루 내 공유 세션 검색.
+     * 크루 내 공유 세션 검색
      *
      * @param crewId 검색 대상 크루
      * @param q      검색어 (호출자가 길이 검증)
