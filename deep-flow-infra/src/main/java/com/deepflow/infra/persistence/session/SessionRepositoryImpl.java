@@ -3,7 +3,7 @@ package com.deepflow.infra.persistence.session;
 import com.deepflow.application.common.SliceResult;
 import com.deepflow.application.port.out.persistence.SessionRepository;
 import com.deepflow.application.port.out.persistence.SharedFocusSessionSlice;
-import com.deepflow.application.session.dto.SharedFeedCursor;
+import com.deepflow.application.crew.dto.SharedFeedCursor;
 import com.deepflow.domain.session.FocusSession;
 import com.deepflow.domain.session.SessionStatus;
 import lombok.RequiredArgsConstructor;

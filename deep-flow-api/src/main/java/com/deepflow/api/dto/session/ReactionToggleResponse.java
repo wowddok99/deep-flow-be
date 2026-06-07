@@ -1,6 +1,6 @@
 package com.deepflow.api.dto.session;
 
-import com.deepflow.application.session.dto.ReactionToggleResult;
+import com.deepflow.application.session.reaction.dto.ReactionToggleResult;
 
 public record ReactionToggleResponse(
         String emoji,

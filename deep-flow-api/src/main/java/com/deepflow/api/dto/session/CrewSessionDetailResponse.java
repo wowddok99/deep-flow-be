@@ -1,6 +1,6 @@
 package com.deepflow.api.dto.session;
 
-import com.deepflow.application.session.dto.CrewSessionDetailInfo;
+import com.deepflow.application.crew.dto.CrewSessionDetailInfo;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.time.LocalDateTime;

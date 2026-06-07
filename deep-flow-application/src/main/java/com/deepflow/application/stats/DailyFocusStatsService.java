@@ -22,6 +22,12 @@ public class DailyFocusStatsService {
 
     private final StatsRepository statsRepository;
 
+    /**
+     * 세션 집중 시간을 날짜별 통계에 반영
+     *
+     * 자정을 넘긴 세션은 날짜별 집중 시간으로 분리하고
+     * 세션 횟수는 시작일에만 반영해 단일 세션이 여러 번 집계되지 않도록 처리
+     */
     @Transactional
     public void upsertStats(Long userId, LocalDateTime startTime, LocalDateTime endTime) {
         LocalDateTime currentStart = startTime;
@@ -50,9 +56,11 @@ public class DailyFocusStatsService {
 
         if (existingStats.isPresent()) {
             DailyFocusStats stats = existingStats.get();
+
             if (sessionDelta > 0) {
                 stats.addSession(durationSeconds);
             } else {
+                // 자정 이후 구간은 같은 세션이므로 세션 횟수 없이 시간만 반영
                 stats.addDuration(durationSeconds);
             }
         } else {

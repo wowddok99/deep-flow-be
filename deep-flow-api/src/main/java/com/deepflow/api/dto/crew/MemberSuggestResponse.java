@@ -1,6 +1,6 @@
 package com.deepflow.api.dto.crew;
 
-import com.deepflow.application.session.dto.MemberSuggestionInfo;
+import com.deepflow.application.crew.dto.MemberSuggestionInfo;
 
 public record MemberSuggestResponse(
         Long userId,

@@ -1,7 +1,7 @@
 package com.deepflow.infra.search;
 
 import com.deepflow.application.port.out.search.SessionSearchPort;
-import com.deepflow.application.session.dto.SearchResultInfo;
+import com.deepflow.application.crew.search.dto.SearchResultInfo;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;

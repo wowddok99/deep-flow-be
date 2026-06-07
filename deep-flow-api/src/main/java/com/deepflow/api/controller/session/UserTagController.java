@@ -2,7 +2,7 @@ package com.deepflow.api.controller.session;
 
 import com.deepflow.api.dto.CommonResponse;
 import com.deepflow.api.security.CustomUserDetails;
-import com.deepflow.application.session.SessionTagService;
+import com.deepflow.application.session.tag.SessionTagService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;

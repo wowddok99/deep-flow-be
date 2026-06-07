@@ -42,3 +42,7 @@ md/
 ### Claude ###
 .claude/
 CLAUDE.md
+
+### Agent Skills ###
+.agents/
+skills-lock.json

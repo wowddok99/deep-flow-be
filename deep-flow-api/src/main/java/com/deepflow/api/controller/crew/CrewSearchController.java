@@ -3,7 +3,7 @@ package com.deepflow.api.controller.crew;
 import com.deepflow.api.dto.CommonResponse;
 import com.deepflow.api.dto.session.SearchResultResponse;
 import com.deepflow.api.security.CustomUserDetails;
-import com.deepflow.application.session.SearchService;
+import com.deepflow.application.crew.search.SearchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;

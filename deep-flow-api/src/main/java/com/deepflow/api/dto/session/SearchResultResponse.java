@@ -1,6 +1,6 @@
 package com.deepflow.api.dto.session;
 
-import com.deepflow.application.session.dto.SearchResultInfo;
+import com.deepflow.application.crew.search.dto.SearchResultInfo;
 
 import java.time.LocalDateTime;
 import java.util.List;

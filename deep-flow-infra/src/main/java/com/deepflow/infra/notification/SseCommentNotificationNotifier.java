@@ -1,7 +1,7 @@
 package com.deepflow.infra.notification;
 
 import com.deepflow.application.port.out.notification.CommentNotificationNotifier;
-import com.deepflow.application.session.dto.CommentNotificationPayload;
+import com.deepflow.application.session.comment.dto.CommentNotificationPayload;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

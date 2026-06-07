@@ -1,6 +1,6 @@
 package com.deepflow.api.dto.session;
 
-import com.deepflow.application.session.dto.CommentInfo;
+import com.deepflow.application.session.comment.dto.CommentInfo;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -34,10 +34,10 @@ public class UserAchievement extends BaseTimeEntity {
     private LocalDateTime achievedAt;
 
     public static UserAchievement create(User user, Achievement achievement) {
-        UserAchievement ua = new UserAchievement();
-        ua.user = user;
-        ua.achievement = achievement;
-        ua.achievedAt = LocalDateTime.now();
-        return ua;
+        UserAchievement userAchievement = new UserAchievement();
+        userAchievement.user = user;
+        userAchievement.achievement = achievement;
+        userAchievement.achievedAt = LocalDateTime.now();
+        return userAchievement;
     }
 }

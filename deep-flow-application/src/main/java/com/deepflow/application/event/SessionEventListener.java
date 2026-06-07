@@ -25,7 +25,11 @@ public class SessionEventListener {
     private final AchievementService achievementService;
     private final AchievementNotifier achievementNotifier;
 
-    // 세션 종료 저장이 확정된 뒤 통계와 칭호를 후처리해 원 유스케이스 실패로 번지지 않도록 분리
+    /**
+     * 세션 종료 후 통계와 칭호 후처리
+     *
+     * 세션 종료 저장이 확정된 뒤 실행해 후처리 실패가 종료 흐름을 막지 않도록 분리
+     */
     @Async("threadPoolTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleSessionStoppedEvent(SessionStoppedEvent event) {
@@ -39,11 +43,11 @@ public class SessionEventListener {
         }
 
         try {
-            List<Achievement> granted = achievementService.checkAndGrant(
+            List<Achievement> grantedAchievements = achievementService.checkAndGrant(
                     event.getUserId(), event.getSessionId(), TriggerType.SESSION_STOP);
 
-            if (!granted.isEmpty()) {
-                achievementNotifier.notifyNewAchievements(event.getUserId(), granted);
+            if (!grantedAchievements.isEmpty()) {
+                achievementNotifier.notifyNewAchievements(event.getUserId(), grantedAchievements);
             }
         } catch (Exception e) {
             log.error("Failed to check achievements for session {}", event.getSessionId(), e);
@@ -52,7 +56,11 @@ public class SessionEventListener {
         log.info("Completed processing for session {}", event.getSessionId());
     }
 
-    // 로그 수정 직후 반영되어야 하는 칭호만 커밋 이후 비동기로 평가
+    /**
+     * 로그 수정 후 칭호 후처리
+     *
+     * 로그 수정 결과가 확정된 뒤 실행해 변경된 기록 기준으로 칭호 조건을 확인
+     */
     @Async("threadPoolTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleLogUpdatedEvent(LogUpdatedEvent event) {
@@ -60,11 +68,11 @@ public class SessionEventListener {
                 event.getSessionId(), event.getUserId());
 
         try {
-            List<Achievement> granted = achievementService.checkAndGrant(
+            List<Achievement> grantedAchievements = achievementService.checkAndGrant(
                     event.getUserId(), event.getSessionId(), TriggerType.LOG_UPDATE);
 
-            if (!granted.isEmpty()) {
-                achievementNotifier.notifyNewAchievements(event.getUserId(), granted);
+            if (!grantedAchievements.isEmpty()) {
+                achievementNotifier.notifyNewAchievements(event.getUserId(), grantedAchievements);
             }
         } catch (Exception e) {
             log.error("Failed to check achievements on log update for session {}",

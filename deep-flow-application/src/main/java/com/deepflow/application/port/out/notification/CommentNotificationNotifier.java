@@ -1,6 +1,6 @@
 package com.deepflow.application.port.out.notification;
 
-import com.deepflow.application.session.dto.CommentNotificationPayload;
+import com.deepflow.application.session.comment.dto.CommentNotificationPayload;
 
 public interface CommentNotificationNotifier {
 

@@ -1,6 +1,6 @@
 package com.deepflow.api.dto.session;
 
-import com.deepflow.application.session.dto.CrewFeedItemInfo;
+import com.deepflow.application.crew.dto.CrewFeedItemInfo;
 
 import java.time.LocalDateTime;
 import java.util.List;

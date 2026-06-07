@@ -37,6 +37,6 @@ public interface CrewMemberRepository {
     /**
      * 댓글 멘션 자동완성에서 본인을 제외하고 사용자명과 이름을 입력 접두어로 매칭
      */
-    List<com.deepflow.application.session.dto.MemberSuggestionInfo> suggestMembers(
+    List<com.deepflow.application.crew.dto.MemberSuggestionInfo> suggestMembers(
             Long crewId, Long excludeUserId, String prefix, int limit);
 }

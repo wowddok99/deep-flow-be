@@ -1,8 +1,8 @@
 package com.deepflow.api.dto.session;
 
-import com.deepflow.application.session.dto.CrewHighlightInfo;
-import com.deepflow.application.session.dto.HighlightItemInfo;
-import com.deepflow.application.session.dto.HighlightMode;
+import com.deepflow.application.crew.dto.CrewHighlightInfo;
+import com.deepflow.application.crew.dto.HighlightItemInfo;
+import com.deepflow.application.crew.dto.HighlightMode;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.List;

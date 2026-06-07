@@ -1,6 +1,6 @@
 package com.deepflow.api.dto.session;
 
-import com.deepflow.application.session.dto.ReactionAggregateInfo;
+import com.deepflow.application.session.reaction.dto.ReactionAggregateInfo;
 
 import java.util.List;
 

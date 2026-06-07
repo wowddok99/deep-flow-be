@@ -49,9 +49,11 @@ public class SessionTimeScheduler {
     }
 
     public void scheduleForSession(Long userId, Long sessionId) {
+        // 세션 종료 시 남은 예약을 취소하기 위해 작업 목록을 보관
         List<ScheduledFuture<?>> futures = new CopyOnWriteArrayList<>();
 
         for (long checkPoint : CHECK_POINTS) {
+            // 각 임계 시점에 시간 기반 칭호 조건을 확인하도록 예약
             ScheduledFuture<?> future = executor.schedule(
                     () -> checkAchievement(userId, sessionId),
                     checkPoint,
@@ -60,27 +62,39 @@ public class SessionTimeScheduler {
             futures.add(future);
         }
 
+        // 세션 종료 시 예약된 체크 작업을 일괄 취소하기 위해 세션 ID 기준으로 저장
         scheduledTasks.put(sessionId, futures);
+
         log.debug("시간 칭호 체크 예약: sessionId={}, checkPoints={}개", sessionId, CHECK_POINTS.length);
     }
 
     public void cancelForSession(Long sessionId) {
         List<ScheduledFuture<?>> futures = scheduledTasks.remove(sessionId);
         if (futures != null) {
+            // 이미 실행 중인 체크는 중단하지 않고, 아직 대기 중인 예약만 취소
             futures.forEach(f -> f.cancel(false));
+
             log.debug("시간 칭호 체크 취소: sessionId={}", sessionId);
         }
     }
 
     private void checkAchievement(Long userId, Long sessionId) {
         try {
-            List<Achievement> granted = achievementService.checkAndGrant(
-                    userId, sessionId, TriggerType.TIME_CHECK);
+            List<Achievement> grantedAchievements = achievementService.checkAndGrant(
+                    userId,
+                    sessionId,
+                    TriggerType.TIME_CHECK
+            );
 
-            if (!granted.isEmpty()) {
-                achievementNotifier.notifyNewAchievements(userId, granted);
+            if (!grantedAchievements.isEmpty()) {
+                achievementNotifier.notifyNewAchievements(userId, grantedAchievements);
+
+                List<String> achievementCodes = grantedAchievements.stream()
+                        .map(Achievement::getCode)
+                        .toList();
+
                 log.info("실시간 시간 칭호 달성: userId={}, achievements={}",
-                        userId, granted.stream().map(Achievement::getCode).toList());
+                        userId, achievementCodes);
             }
         } catch (Exception e) {
             log.error("Time check failed: sessionId={}", sessionId, e);

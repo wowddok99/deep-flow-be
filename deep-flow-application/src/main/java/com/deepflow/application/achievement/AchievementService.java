@@ -44,41 +44,53 @@ public class AchievementService {
      */
     @Transactional
     public List<Achievement> checkAndGrant(Long userId, Long sessionId, TriggerType triggerType) {
+        // 칭호 평가는 세션 흐름을 기준으로 수행되므로 평가 대상 세션을 조회
         FocusSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
 
+        // 칭호 조건 판정에 필요한 평가 컨텍스트 구성
         AchievementContext context = buildContext(userId, session, triggerType);
 
-        List<String> newCodes = evaluators.stream()
+        // 현재 트리거 기준으로 지급 후보 칭호 코드를 수집
+        List<String> candidateCodes = evaluators.stream()
                 .filter(e -> e.supportedTriggers().contains(triggerType))
                 .flatMap(e -> e.evaluate(context).stream())
                 .distinct()
                 .toList();
 
-        if (newCodes.isEmpty()) return List.of();
+        // 지급 후보가 없으면 이후 처리 생략
+        if (candidateCodes.isEmpty()) return List.of();
 
-        List<Achievement> achievements = achievementRepository.findByCodes(newCodes);
+        // 지급 후보 코드를 실제 칭호 엔티티로 조회
+        List<Achievement> achievements = achievementRepository.findByCodes(candidateCodes);
+
+        // 칭호 획득 기록 생성을 위한 사용자 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
 
-        List<Achievement> granted = new ArrayList<>();
+        // 실제 수여에 성공한 칭호만 반환 대상으로 관리
+        List<Achievement> grantedAchievements = new ArrayList<>();
+
         for (Achievement achievement : achievements) {
             try {
-                UserAchievement ua = UserAchievement.create(user, achievement);
-                userAchievementRepository.save(ua);
-                granted.add(achievement);
+                // 사용자의 칭호 획득 기록 생성
+                UserAchievement userAchievement = UserAchievement.create(user, achievement);
+                userAchievementRepository.save(userAchievement);
+
+                // 저장 성공한 칭호만 알림 대상으로 추가
+                grantedAchievements.add(achievement);
 
                 log.info("칭호 달성: userId={}, code={}, name={}, trigger={}",
                         userId, achievement.getCode(), achievement.getName(), triggerType);
 
             } catch (DataIntegrityViolationException e) {
-                // 동시 평가로 이미 지급된 칭호는 유니크 제약에 맡기고 무시
-                log.debug("Achievement already granted (concurrent): userId={}, code={}",
+                // 중복 수여는 DB 유니크 제약으로 방어하고 무시
+                log.debug("Achievement already grantedAchievements (concurrent): userId={}, code={}",
                         userId, achievement.getCode());
             }
         }
 
-        return granted;
+        return grantedAchievements;
     }
 
     /**

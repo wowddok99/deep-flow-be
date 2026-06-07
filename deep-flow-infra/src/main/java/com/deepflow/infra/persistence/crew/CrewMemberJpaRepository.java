@@ -1,6 +1,6 @@
 package com.deepflow.infra.persistence.crew;
 
-import com.deepflow.application.session.dto.MemberSuggestionInfo;
+import com.deepflow.application.crew.dto.MemberSuggestionInfo;
 import com.deepflow.domain.crew.CrewMember;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -46,7 +46,7 @@ interface CrewMemberJpaRepository extends JpaRepository<CrewMember, Long> {
      * 호출부에서 이스케이프한 %, _, \\ 값을 리터럴로 처리하기 위해 ESCAPE 절 유지
      */
     @Query("""
-            SELECT new com.deepflow.application.session.dto.MemberSuggestionInfo(u.id, u.name, u.username)
+            SELECT new com.deepflow.application.crew.dto.MemberSuggestionInfo(u.id, u.name, u.username)
             FROM CrewMember cm, User u
             WHERE cm.userId = u.id
               AND cm.crewId = :crewId

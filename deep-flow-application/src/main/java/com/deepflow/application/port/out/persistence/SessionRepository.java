@@ -1,7 +1,7 @@
 package com.deepflow.application.port.out.persistence;
 
 import com.deepflow.application.common.SliceResult;
-import com.deepflow.application.session.dto.SharedFeedCursor;
+import com.deepflow.application.crew.dto.SharedFeedCursor;
 import com.deepflow.domain.session.FocusSession;
 import com.deepflow.domain.session.SessionStatus;
 

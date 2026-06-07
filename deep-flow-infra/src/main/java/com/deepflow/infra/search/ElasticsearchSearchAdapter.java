@@ -3,7 +3,7 @@ package com.deepflow.infra.search;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import com.deepflow.application.port.out.search.SessionSearchPort;
-import com.deepflow.application.session.dto.SearchResultInfo;
+import com.deepflow.application.crew.search.dto.SearchResultInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;

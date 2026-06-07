@@ -5,9 +5,9 @@ import com.deepflow.api.dto.session.ReactionAggregateResponse;
 import com.deepflow.api.dto.session.ReactionToggleRequest;
 import com.deepflow.api.dto.session.ReactionToggleResponse;
 import com.deepflow.api.security.CustomUserDetails;
-import com.deepflow.application.session.SessionReactionService;
-import com.deepflow.application.session.dto.ReactionAggregateInfo;
-import com.deepflow.application.session.dto.ReactionToggleResult;
+import com.deepflow.application.session.reaction.SessionReactionService;
+import com.deepflow.application.session.reaction.dto.ReactionAggregateInfo;
+import com.deepflow.application.session.reaction.dto.ReactionToggleResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -34,7 +34,11 @@ public class SessionReactionController {
             @PathVariable @Min(1) Long sessionId,
             @RequestBody @Valid ReactionToggleRequest request
     ) {
-        ReactionToggleResult result = reactionService.toggle(user.getUserId(), sessionId, request.emoji());
+        ReactionToggleResult result = reactionService.toggle(
+                user.getUserId(),
+                sessionId,
+                request.emoji());
+
         return ResponseEntity.ok(CommonResponse.ok(ReactionToggleResponse.from(result)));
     }
 
@@ -45,6 +49,7 @@ public class SessionReactionController {
             @PathVariable @Min(1) Long sessionId
     ) {
         ReactionAggregateInfo info = reactionService.aggregate(user.getUserId(), sessionId);
+
         return ResponseEntity.ok(CommonResponse.ok(ReactionAggregateResponse.from(info)));
     }
 }

@@ -1,6 +1,6 @@
 package com.deepflow.application.port.out.search;
 
-import com.deepflow.application.session.dto.SearchResultInfo;
+import com.deepflow.application.crew.search.dto.SearchResultInfo;
 
 import java.util.List;
 

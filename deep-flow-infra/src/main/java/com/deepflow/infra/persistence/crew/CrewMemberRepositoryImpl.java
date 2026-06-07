@@ -1,7 +1,7 @@
 package com.deepflow.infra.persistence.crew;
 
 import com.deepflow.application.port.out.persistence.CrewMemberRepository;
-import com.deepflow.application.session.dto.MemberSuggestionInfo;
+import com.deepflow.application.crew.dto.MemberSuggestionInfo;
 import com.deepflow.domain.crew.CrewMember;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;

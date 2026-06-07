@@ -1,6 +1,6 @@
 package com.deepflow.api.dto.session;
 
-import com.deepflow.application.session.dto.MentionInfo;
+import com.deepflow.application.notification.dto.MentionInfo;
 
 import java.time.LocalDateTime;
 

@@ -1,6 +1,6 @@
 package com.deepflow.api.dto.session;
 
-import com.deepflow.application.session.dto.SharedSessionInfo;
+import com.deepflow.application.session.share.dto.SharedSessionInfo;
 
 import java.time.LocalDateTime;
 import java.util.List;

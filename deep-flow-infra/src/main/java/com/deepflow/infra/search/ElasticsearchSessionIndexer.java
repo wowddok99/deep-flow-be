@@ -3,7 +3,7 @@ package com.deepflow.infra.search;
 import com.deepflow.application.port.out.persistence.SessionRepository;
 import com.deepflow.application.port.out.persistence.SessionTagRepository;
 import com.deepflow.application.port.out.search.SessionIndexer;
-import com.deepflow.application.session.dto.SessionSharedPayload;
+import com.deepflow.application.session.share.dto.SessionSharedPayload;
 import com.deepflow.domain.session.FocusSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

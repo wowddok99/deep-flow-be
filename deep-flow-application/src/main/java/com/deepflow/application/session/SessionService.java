@@ -53,11 +53,14 @@ public class SessionService {
         }
 
         FocusSession session = FocusSession.create(LocalDateTime.now(), user);
-        SessionInfo info = SessionInfo.from(sessionRepository.save(session));
-        sessionTimeScheduler.scheduleForSession(userId, info.id());
-        log.info("세션 시작: sessionId={}, userId={}", info.id(), userId);
-        eventPublisher.publishEvent(new SessionStartedEvent(info.id(), userId));
-        return info;
+        SessionInfo sessionInfo = SessionInfo.from(sessionRepository.save(session));
+
+        log.info("세션 시작: sessionId={}, userId={}", sessionInfo.id(), userId);
+
+        sessionTimeScheduler.scheduleForSession(userId, sessionInfo.id());
+        eventPublisher.publishEvent(new SessionStartedEvent(sessionInfo.id(), userId));
+
+        return sessionInfo;
     }
 
     public SliceResult<SessionSummaryInfo> getAllSessions(Long userId, Long cursorId, int size) {
@@ -79,21 +82,21 @@ public class SessionService {
 
     @CacheEvict(value = "sessions", key = "#id")
     @Transactional
-    public void updateLog(Long userId, Long id, String title, String content, String summary, List<String> imageUrls) {
-        FocusSession session = getOwnedSession(id, userId);
+    public void updateLog(Long userId, Long sessionId, String title, String content, String summary, List<String> imageUrls) {
+        FocusSession session = getOwnedSession(sessionId, userId);
 
-        List<String> oldUrls = session.getFocusLog().getImages().stream()
+        List<String> oldImageUrls = session.getFocusLog().getImages().stream()
                 .map(img -> img.getImageUrl())
                 .toList();
 
         session.getFocusLog().update(title, content, summary, imageUrls);
 
-        imageService.deleteRemovedImages(oldUrls, imageUrls);
+        imageService.deleteRemovedImages(oldImageUrls, imageUrls);
 
-        // 로그 업데이트 시 실시간 칭호 체크 이벤트 발행
+        // 로그 수정 후 커밋 기준으로 칭호를 평가하기 위해 이벤트로 분리
         eventPublisher.publishEvent(new LogUpdatedEvent(session.getId(), userId));
 
-        log.debug("로그 수정: sessionId={}, userId={}", id, userId);
+        log.debug("로그 수정: sessionId={}, userId={}", sessionId, userId);
     }
 
     @Caching(evict = {
@@ -103,17 +106,23 @@ public class SessionService {
     @Transactional
     public void stopSession(Long userId, Long id) {
         FocusSession session = getOwnedSession(id, userId);
+
         session.stop(LocalDateTime.now());
+
         // 종료된 세션은 더 이상 시간 기반 칭호 예약이 필요 없으므로 남은 작업 취소
         sessionTimeScheduler.cancelForSession(id);
-        log.info("세션 종료: sessionId={}, userId={}, duration={}s", id, userId, session.getDurationSeconds());
 
-        eventPublisher.publishEvent(new SessionStoppedEvent(
+        log.info("세션 종료: sessionId={}, userId={}, duration={}s",
+                id, userId, session.getDurationSeconds());
+
+        SessionStoppedEvent event = new SessionStoppedEvent(
                 session.getId(),
                 session.getUser().getId(),
                 session.getDurationSeconds(),
                 session.getStartTime(),
-                session.getEndTime()));
+                session.getEndTime());
+
+        eventPublisher.publishEvent(event);
     }
 
     @CacheEvict(value = "sessions", key = "#id")
@@ -126,6 +135,7 @@ public class SessionService {
         }
 
         session.softDelete();
+
         log.info("세션 삭제: sessionId={}, userId={}", id, userId);
     }
 

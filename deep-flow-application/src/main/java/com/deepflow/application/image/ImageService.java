@@ -52,6 +52,7 @@ public class ImageService {
             String key = extractKeyFromUrl(imageUrl);
             imageStorage.delete(key);
         } catch (Exception e) {
+            // 이미지 삭제 실패로 로그 수정이 실패하지 않도록 경고 로그만 남김
             log.warn("Failed to delete image from storage: {}", imageUrl, e);
         }
     }
@@ -80,6 +81,8 @@ public class ImageService {
         if (bucketPathIndex == -1) {
             throw new IllegalArgumentException("Invalid image URL: " + url);
         }
+
+        // 공개 URL에서 스토리지 삭제에 필요한 파일 경로만 추출
         return url.substring(bucketPathIndex + 1);
     }
 }

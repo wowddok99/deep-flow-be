@@ -42,7 +42,7 @@ public class SessionController {
     })
     @PostMapping("/start")
     public ResponseEntity<CommonResponse<SessionResponse>> startSession(
-        @AuthenticationPrincipal CustomUserDetails userDetails
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         SessionInfo info = sessionService.startSession(userDetails.getUserId());
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -59,13 +59,20 @@ public class SessionController {
             @Parameter(description = "Cursor ID for pagination") @RequestParam(required = false) @Min(1) Long cursorId,
             @Parameter(description = "Page size (1-50)") @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size
     ) {
-        SliceResult<SessionSummaryInfo> result = sessionService.getAllSessions(userDetails.getUserId(), cursorId, size);
+        SliceResult<SessionSummaryInfo> result = sessionService.getAllSessions(
+                userDetails.getUserId(),
+                cursorId,
+                size);
 
         List<SessionSummaryResponse> content = result.content().stream()
                 .map(SessionSummaryResponse::from)
                 .toList();
 
-        CursorResponse<SessionSummaryResponse> response = new CursorResponse<>(content, result.nextCursorId(), result.hasNext());
+        CursorResponse<SessionSummaryResponse> response = new CursorResponse<>(
+                content,
+                result.nextCursorId(),
+                result.hasNext());
+
         return ResponseEntity.ok(CommonResponse.ok(response));
     }
 
@@ -79,8 +86,10 @@ public class SessionController {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "Session ID") @PathVariable @Min(1) Long id
     ) {
-        SessionDetailInfo info = sessionService.getSessionDetail(userDetails.getUserId(), id);
-        return ResponseEntity.ok(CommonResponse.ok(sessionResponseMapper.toDetailResponse(info)));
+        SessionDetailInfo sessionDetailInfo = sessionService.getSessionDetail(userDetails.getUserId(), id);
+        SessionDetailResponse response = sessionResponseMapper.toDetailResponse(sessionDetailInfo);
+
+        return ResponseEntity.ok(CommonResponse.ok(response));
     }
 
     @Operation(summary = "Update Session Log")
@@ -94,8 +103,16 @@ public class SessionController {
             @Parameter(description = "Session ID") @PathVariable @Min(1) Long id,
             @RequestBody @Valid LogUpdateRequest request
     ) {
-        String contentStr = request.content() != null ? request.content().toString() : null;
-        sessionService.updateLog(userDetails.getUserId(), id, request.title(), contentStr, request.summary(), request.imageUrls());
+        String content = request.content() != null ? request.content().toString() : null;
+
+        sessionService.updateLog(
+                userDetails.getUserId(),
+                id,
+                request.title(),
+                content,
+                request.summary(),
+                request.imageUrls());
+
         return ResponseEntity.ok(CommonResponse.ok());
     }
 

@@ -1,6 +1,6 @@
 package com.deepflow.infra.config;
 
-import com.deepflow.application.session.dto.CrewHighlightInfo;
+import com.deepflow.application.crew.dto.CrewHighlightInfo;
 import com.deepflow.application.session.dto.SessionDetailInfo;
 import com.deepflow.application.stats.dto.HourlyDistributionInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
